@@ -33,6 +33,10 @@ export default function LandingPage() {
     setCheckoutLoading(false)
   }
 
+  const scrollToHowItWorks = () => {
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777' }}>Loading...</div>
   }
@@ -53,30 +57,37 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section style={{ padding: '60px 48px', position: 'relative' }}>
+      <section style={{ padding: '60px 48px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
         {/* Left side image */}
-        <div style={{ position: 'absolute', left: '-100px', top: '50%', transform: 'translateY(-50%)', width: '280px', height: '400px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px' }}>
+        <div style={{ width: '300px', height: '450px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px', flexShrink: 0, marginLeft: '-150px' }}>
           {/* Placeholder for left image */}
-        </div>
-        
-        {/* Right side image */}
-        <div style={{ position: 'absolute', right: '-100px', top: '50%', transform: 'translateY(-50%)', width: '280px', height: '400px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px' }}>
-          {/* Placeholder for right image */}
         </div>
 
         {/* Main bordered content */}
-        <div style={{ maxWidth: '800px', margin: '0 auto', border: '1px solid #2a2a35', borderRadius: '20px', padding: '60px 40px', textAlign: 'center', background: '#0a0b0e' }}>
-          <h1 style={{ fontSize: '64px', fontWeight: 800, lineHeight: 1.1, marginBottom: '24px' }}>
-            The Trading Journal<br />
-            <span style={{ color: '#22c55e' }}>Built for Serious Traders</span>
+        <div style={{ maxWidth: '750px', border: '1px solid #2a2a35', borderRadius: '20px', padding: '50px 40px', textAlign: 'center', background: '#0a0b0e' }}>
+          <h1 style={{ fontSize: '52px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px' }}>
+            The Trading Journal
           </h1>
-          <p style={{ fontSize: '20px', color: '#888', marginBottom: '40px', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto 40px' }}>
+          <h2 style={{ fontSize: '52px', fontWeight: 800, color: '#22c55e', marginBottom: '20px' }}>
+            Built for Serious Traders
+          </h2>
+          <p style={{ fontSize: '18px', color: '#888', marginBottom: '32px', lineHeight: 1.6, maxWidth: '550px', margin: '0 auto 32px' }}>
             Track your trades, analyze your performance, and discover patterns that make you profitable. 
             Customizable fields, powerful statistics, and beautiful visualizations.
           </p>
-          <button onClick={handleSubscribe} disabled={checkoutLoading} style={{ padding: '18px 48px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '20px', cursor: 'pointer' }}>
-            {checkoutLoading ? 'Loading...' : 'SUBSCRIBE: £9/month'}
-          </button>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <button onClick={handleSubscribe} disabled={checkoutLoading} style={{ padding: '16px 36px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px', cursor: 'pointer' }}>
+              {checkoutLoading ? 'Loading...' : 'Purchase Membership: £9.00/month'}
+            </button>
+            <button onClick={scrollToHowItWorks} style={{ padding: '16px 36px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '18px', cursor: 'pointer' }}>
+              More Info
+            </button>
+          </div>
+        </div>
+
+        {/* Right side image */}
+        <div style={{ width: '300px', height: '450px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px', flexShrink: 0, marginRight: '-150px' }}>
+          {/* Placeholder for right image */}
         </div>
       </section>
 
@@ -103,7 +114,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section style={{ padding: '40px 48px' }}>
+      <section id="how-it-works" style={{ padding: '40px 48px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '40px' }}>How It Works</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>

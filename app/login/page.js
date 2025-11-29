@@ -2,21 +2,49 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-function DiscordIcon() {
+function GoogleIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  )
+}
+
+function AppleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+    </svg>
+  )
+}
+
+function MicrosoftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path fill="#F25022" d="M1 1h10v10H1z"/>
+      <path fill="#00A4EF" d="M1 13h10v10H1z"/>
+      <path fill="#7FBA00" d="M13 1h10v10H13z"/>
+      <path fill="#FFB900" d="M13 13h10v10H13z"/>
     </svg>
   )
 }
 
 export default function LoginPage() {
-  const { user, loading, signInWithDiscord } = useAuth()
+  const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, supabase } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
     if (!loading && user) {
@@ -24,52 +52,167 @@ export default function LoginPage() {
     }
   }, [user, loading, router])
 
+  const handleEmailAuth = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    setAuthLoading(true)
+
+    if (isSignUp && password !== confirmPassword) {
+      setAuthError('Passwords do not match')
+      setAuthLoading(false)
+      return
+    }
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`
+          }
+        })
+        if (error) throw error
+        setAuthError('Check your email to confirm your account!')
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+        if (error) throw error
+        router.push('/dashboard')
+      }
+    } catch (err) {
+      setAuthError(err.message)
+    }
+    setAuthLoading(false)
+  }
+
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`
+      }
+    })
+  }
+
+  const handleAppleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`
+      }
+    })
+  }
+
+  const handleMicrosoftLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+        scopes: 'email'
+      }
+    })
+  }
+
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777' }}>Loading...</div>
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '48px', width: '420px', textAlign: 'center' }}>
-        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '12px' }}>
-          <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
+      <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '40px', width: '420px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
+            <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
+          </div>
+          <p style={{ color: '#888', fontSize: '14px' }}>{isSignUp ? 'Create your account' : 'Welcome back'}</p>
         </div>
-        <p style={{ color: '#888', marginBottom: '8px' }}>Discord Member Login</p>
-        <p style={{ color: '#555', fontSize: '13px', marginBottom: '32px' }}>This login is for LSD Discord members only</p>
 
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px', marginBottom: '24px', color: '#ef4444', fontSize: '14px' }}>
-            Authentication failed. Please try again.
+        {(error || authError) && (
+          <div style={{ background: authError.includes('Check your email') ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${authError.includes('Check your email') ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '10px', padding: '12px', marginBottom: '20px', color: authError.includes('Check your email') ? '#22c55e' : '#ef4444', fontSize: '14px', textAlign: 'center' }}>
+            {authError || 'Authentication failed. Please try again.'}
           </div>
         )}
 
-        <button onClick={signInWithDiscord} style={{ 
-          width: '100%', 
-          padding: '16px 24px', 
-          background: '#5865F2', 
-          border: 'none', 
-          borderRadius: '12px', 
-          color: '#fff', 
-          fontWeight: 600, 
-          fontSize: '16px', 
-          cursor: 'pointer', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          gap: '12px',
-          transition: 'transform 0.1s, box-shadow 0.1s'
-        }}
-        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(88,101,242,0.4)' }}
-        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+        <form onSubmit={handleEmailAuth}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Email</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              required
+              style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px' }} 
+            />
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              required
+              style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px' }} 
+            />
+          </div>
+          {isSignUp && (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Confirm Password</label>
+              <input 
+                type="password" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
+                required
+                style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px' }} 
+              />
+            </div>
+          )}
+          <button 
+            type="submit" 
+            disabled={authLoading}
+            style={{ width: '100%', padding: '14px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: 'pointer', marginBottom: '16px' }}
+          >
+            {authLoading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
+          </button>
+        </form>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ flex: 1, height: '1px', background: '#222230' }} />
+          <span style={{ color: '#666', fontSize: '12px' }}>OR</span>
+          <div style={{ flex: 1, height: '1px', background: '#222230' }} />
+        </div>
+
+        <button 
+          onClick={handleGoogleLogin}
+          style={{ width: '100%', padding: '14px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}
         >
-          <DiscordIcon /> Continue with Discord
+          <GoogleIcon /> Continue with Google
         </button>
 
-        <p style={{ marginTop: '24px', fontSize: '12px', color: '#666' }}>
-          Not a member? <a href="/pricing" style={{ color: '#22c55e' }}>Subscribe here</a>
+        <button 
+          onClick={handleAppleLogin}
+          style={{ width: '100%', padding: '14px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}
+        >
+          <AppleIcon /> Continue with Apple
+        </button>
+
+        <button 
+          onClick={handleMicrosoftLogin}
+          style={{ width: '100%', padding: '14px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        >
+          <MicrosoftIcon /> Continue with Microsoft
+        </button>
+
+        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#888' }}>
+          {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+          <button onClick={() => { setIsSignUp(!isSignUp); setAuthError('') }} style={{ background: 'none', border: 'none', color: '#22c55e', cursor: 'pointer', fontSize: '14px' }}>
+            {isSignUp ? 'Sign In' : 'Sign Up'}
+          </button>
         </p>
 
-        <a href="/" style={{ display: 'inline-block', marginTop: '24px', color: '#888', fontSize: '14px' }}>← Back to home</a>
+        <a href="/" style={{ display: 'block', textAlign: 'center', marginTop: '20px', color: '#666', fontSize: '14px' }}>← Back to home</a>
       </div>
     </div>
   )

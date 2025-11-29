@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase'
 
 const AuthContext = createContext({})
 
+// Your LSD Trading Discord Server ID - UPDATE THIS
+const LSD_DISCORD_SERVER_ID = 'YOUR_DISCORD_SERVER_ID'
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -52,6 +55,16 @@ export function AuthProvider({ children }) {
     await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
+        redirectTo: `${window.location.origin}/api/auth/callback?discord=true`,
+        scopes: 'identify guilds'
+      },
+    })
+  }
+
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
       },
     })
@@ -66,7 +79,7 @@ export function AuthProvider({ children }) {
   const isPro = profile?.subscription_status === 'active'
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithDiscord, signOut, isPro, supabase }}>
+    <AuthContext.Provider value={{ user, profile, loading, signInWithDiscord, signInWithGoogle, signOut, isPro, supabase }}>
       {children}
     </AuthContext.Provider>
   )
