@@ -38,45 +38,53 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', overflow: 'hidden' }}>
       {/* Header */}
       <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
         <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px' }}>
           <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <a href="/pricing" style={{ color: '#aaa', fontSize: '14px' }}>Pricing</a>
-          <a href="/login" style={{ padding: '10px 20px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <a href="/pricing" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '16px' }}>Pricing</a>
+          <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '16px' }}>
             Member Login
           </a>
         </div>
       </header>
 
       {/* Hero */}
-      <section style={{ padding: '100px 48px', textAlign: 'center', maxWidth: '900px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1.1, marginBottom: '24px' }}>
-          The Trading Journal<br />
-          <span style={{ color: '#22c55e' }}>Built for Serious Traders</span>
-        </h1>
-        <p style={{ fontSize: '20px', color: '#888', marginBottom: '40px', lineHeight: 1.6 }}>
-          Track your trades, analyze your performance, and discover patterns that make you profitable. 
-          Customizable fields, powerful statistics, and beautiful visualizations.
-        </p>
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-          <button onClick={handleSubscribe} disabled={checkoutLoading} style={{ padding: '16px 32px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 700, fontSize: '16px', cursor: 'pointer' }}>
-            {checkoutLoading ? 'Loading...' : 'Subscribe - $9/month'}
+      <section style={{ padding: '60px 48px', position: 'relative' }}>
+        {/* Left side image */}
+        <div style={{ position: 'absolute', left: '-100px', top: '50%', transform: 'translateY(-50%)', width: '280px', height: '400px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px' }}>
+          {/* Placeholder for left image */}
+        </div>
+        
+        {/* Right side image */}
+        <div style={{ position: 'absolute', right: '-100px', top: '50%', transform: 'translateY(-50%)', width: '280px', height: '400px', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px' }}>
+          {/* Placeholder for right image */}
+        </div>
+
+        {/* Main bordered content */}
+        <div style={{ maxWidth: '800px', margin: '0 auto', border: '1px solid #2a2a35', borderRadius: '20px', padding: '60px 40px', textAlign: 'center', background: '#0a0b0e' }}>
+          <h1 style={{ fontSize: '64px', fontWeight: 800, lineHeight: 1.1, marginBottom: '24px' }}>
+            The Trading Journal<br />
+            <span style={{ color: '#22c55e' }}>Built for Serious Traders</span>
+          </h1>
+          <p style={{ fontSize: '20px', color: '#888', marginBottom: '40px', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto 40px' }}>
+            Track your trades, analyze your performance, and discover patterns that make you profitable. 
+            Customizable fields, powerful statistics, and beautiful visualizations.
+          </p>
+          <button onClick={handleSubscribe} disabled={checkoutLoading} style={{ padding: '18px 48px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '20px', cursor: 'pointer' }}>
+            {checkoutLoading ? 'Loading...' : 'SUBSCRIBE: £9/month'}
           </button>
-          <a href="/pricing" style={{ padding: '16px 32px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '16px', display: 'inline-flex', alignItems: 'center' }}>
-            View Pricing
-          </a>
         </div>
       </section>
 
       {/* Features */}
-      <section style={{ padding: '80px 48px', background: '#0d0d12' }}>
+      <section style={{ padding: '40px 48px', background: '#0d0d12' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '60px' }}>Everything You Need</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '40px' }}>Everything You Need</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
             {[
               { title: 'Custom Fields', desc: 'Create your own inputs - timeframes, sessions, setups, emotions. Make the journal work for YOUR strategy.' },
               { title: 'Smart Statistics', desc: 'See PnL, winrate, and RR broken down by any field. Discover which setups actually work for you.' },
@@ -85,8 +93,8 @@ export default function LandingPage() {
               { title: 'Beautiful Charts', desc: 'Interactive equity curves with hover tooltips. Watch your progress over time.' },
               { title: 'Cloud Synced', desc: 'Access your journal from anywhere. Your data is securely stored and always available.' },
             ].map((f, i) => (
-              <div key={i} style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '16px', padding: '28px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px', color: '#fff' }}>{f.title}</h3>
+              <div key={i} style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '16px', padding: '24px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '10px', color: '#fff' }}>{f.title}</h3>
                 <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             ))}
@@ -94,16 +102,40 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section style={{ padding: '40px 48px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '40px' }}>How It Works</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
+            {[
+              { step: '1', title: 'Subscribe', desc: 'Sign up with a simple monthly subscription', image: '/how-1.png' },
+              { step: '2', title: 'Log Trades', desc: 'Record your trades with custom fields', image: '/how-2.png' },
+              { step: '3', title: 'Analyze', desc: 'Discover patterns and improve your edge', image: '/how-3.png' },
+            ].map((item, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ width: '100%', aspectRatio: '4/3', background: '#14141a', border: '1px solid #2a2a35', borderRadius: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {/* Image placeholder - replace src with your images */}
+                  <span style={{ color: '#555', fontSize: '14px' }}>Image {item.step}</span>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#22c55e', borderRadius: '50%', fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>{item.step}</div>
+                <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px', color: '#fff' }}>{item.title}</h3>
+                <p style={{ fontSize: '14px', color: '#888' }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Preview */}
-      <section style={{ padding: '80px 48px' }}>
+      <section style={{ padding: '40px 48px', background: '#0d0d12' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '20px' }}>Simple Pricing</h2>
-          <p style={{ color: '#888', marginBottom: '48px' }}>One plan, everything included</p>
+          <h2 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px' }}>Simple Pricing</h2>
+          <p style={{ color: '#888', marginBottom: '32px' }}>One plan, everything included</p>
           
           <div style={{ background: 'linear-gradient(135deg, #14141a 0%, #1a2a1a 100%)', border: '2px solid #22c55e', borderRadius: '16px', padding: '32px', textAlign: 'left', position: 'relative' }}>
             <div style={{ position: 'absolute', top: '-12px', right: '20px', background: '#22c55e', color: '#000', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px' }}>FULL ACCESS</div>
             <div style={{ fontSize: '14px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Pro</div>
-            <div style={{ fontSize: '40px', fontWeight: 700, marginBottom: '24px' }}>$9<span style={{ fontSize: '16px', color: '#666' }}>/month</span></div>
+            <div style={{ fontSize: '40px', fontWeight: 700, marginBottom: '24px' }}>£9<span style={{ fontSize: '16px', color: '#666' }}>/month</span></div>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
               {['Unlimited Accounts', 'Advanced Statistics', 'Unlimited Trades', 'Custom Fields', 'Priority Support', 'Export Data'].map((f, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#bbb', fontSize: '14px' }}><CheckIcon /> {f}</li>
