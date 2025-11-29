@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 function DiscordIcon() {
   return (
@@ -12,17 +12,41 @@ function DiscordIcon() {
   )
 }
 
-export default function LoginPage() {
-  const { user, loading, signInWithDiscord } = useAuth()
+function CheckCircle() {
+  return <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 10"/></svg>
+}
+
+export default function SignupPage() {
+  const { user, loading, signInWithDiscord, supabase } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const sessionId = searchParams.get('session_id')
+  const [status, setStatus] = useState('verifying')
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard')
+      // User is logged in, link the subscription
+      linkSubscription()
     }
-  }, [user, loading, router])
+  }, [user, loading])
+
+  const linkSubscription = async () => {
+    if (!sessionId || !user) return
+    
+    try {
+      const res = await fetch('/api/stripe/link-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      })
+      
+      if (res.ok) {
+        router.push('/dashboard?success=true')
+      }
+    } catch (error) {
+      console.error('Link error:', error)
+    }
+  }
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777' }}>Loading...</div>
@@ -30,18 +54,10 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '48px', width: '420px', textAlign: 'center' }}>
-        <div style={{ fontSize: '28px', fontWeight: 700, marginBottom: '12px' }}>
-          <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
-        </div>
-        <p style={{ color: '#888', marginBottom: '8px' }}>Discord Member Login</p>
-        <p style={{ color: '#555', fontSize: '13px', marginBottom: '32px' }}>This login is for LSD Discord members only</p>
-
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px', marginBottom: '24px', color: '#ef4444', fontSize: '14px' }}>
-            Authentication failed. Please try again.
-          </div>
-        )}
+      <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '48px', width: '450px', textAlign: 'center' }}>
+        <CheckCircle />
+        <h1 style={{ fontSize: '24px', fontWeight: 700, marginTop: '20px', marginBottom: '12px', color: '#fff' }}>Payment Successful!</h1>
+        <p style={{ color: '#888', marginBottom: '32px' }}>Now connect your Discord account to complete setup</p>
 
         <button onClick={signInWithDiscord} style={{ 
           width: '100%', 
@@ -56,20 +72,14 @@ export default function LoginPage() {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          gap: '12px',
-          transition: 'transform 0.1s, box-shadow 0.1s'
-        }}
-        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(88,101,242,0.4)' }}
-        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
-        >
-          <DiscordIcon /> Continue with Discord
+          gap: '12px'
+        }}>
+          <DiscordIcon /> Connect Discord Account
         </button>
 
-        <p style={{ marginTop: '24px', fontSize: '12px', color: '#666' }}>
-          Not a member? <a href="/pricing" style={{ color: '#22c55e' }}>Subscribe here</a>
+        <p style={{ marginTop: '20px', fontSize: '13px', color: '#666' }}>
+          Your subscription is active. Connect Discord to access your journal.
         </p>
-
-        <a href="/" style={{ display: 'inline-block', marginTop: '24px', color: '#888', fontSize: '14px' }}>← Back to home</a>
       </div>
     </div>
   )
