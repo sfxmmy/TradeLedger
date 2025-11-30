@@ -1,3 +1,6 @@
+export async function middleware(request) {
+  console.log('Middleware hit:', request.nextUrl.pathname)
+
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
