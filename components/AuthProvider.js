@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 const AuthContext = createContext({})
 
@@ -18,6 +19,7 @@ export default function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     let mounted = true
@@ -41,7 +43,6 @@ export default function AuthProvider({ children }) {
         }
 
         if (authUser) {
-          // Get profile
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -67,7 +68,6 @@ export default function AuthProvider({ children }) {
 
     getUser()
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         setUser(session?.user ?? null)
@@ -92,13 +92,22 @@ export default function AuthProvider({ children }) {
     }
   }, [])
 
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  const isPro = profile?.subscription_status === 'active'
+
   const value = {
     user,
     profile,
     loading,
+    supabase,
+    signOut,
+    isPro,
   }
 
-  // Show loading only briefly
   if (loading) {
     return (
       <div style={{
