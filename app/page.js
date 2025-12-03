@@ -2,22 +2,14 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 function CheckIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
 }
 
 export default function LandingPage() {
-  const { user, hasAccess, loading } = useAuth()
+  const { user, hasAccess } = useAuth()
   const router = useRouter()
-
-  // Redirect logged in users with access
-  useEffect(() => {
-    if (!loading && user && hasAccess) {
-      router.push('/dashboard')
-    }
-  }, [user, hasAccess, loading, router])
 
   const handleSubscribe = () => {
     router.push('/signup?redirect=checkout')
@@ -29,16 +21,22 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      {/* Header */}
+      {/* Header - Same across all pages */}
       <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px' }}>
+        <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
           <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
-        </div>
+        </a>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <a href="/pricing" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '16px', textDecoration: 'none' }}>Pricing</a>
-          <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '16px', textDecoration: 'none' }}>
-            Member Login
-          </a>
+          {user && hasAccess ? (
+            <a href="/dashboard" style={{ padding: '12px 24px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+              Dashboard
+            </a>
+          ) : (
+            <>
+              <a href="/pricing" style={{ padding: '12px 24px', color: '#aaa', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
+              <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>Member Login</a>
+            </>
+          )}
         </div>
       </header>
 
