@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+// Create admin supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -17,21 +20,23 @@ export async function POST(request) {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message)
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    return NextResponse.json({ error: 'Webhook error' }, { status: 400 })
   }
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object
-        const userId = session.metadata?.userId
-        
+        const userId = session.subscription 
+          ? (await stripe.subscriptions.retrieve(session.subscription)).metadata.supabase_user_id
+          : session.metadata?.supabase_user_id
+
         if (userId) {
           await supabase
             .from('profiles')
             .update({
               subscription_status: 'active',
-              stripe_subscription_id: session.subscription,
+              stripe_subscription_id: session.subscription
             })
             .eq('id', userId)
         }
@@ -40,39 +45,34 @@ export async function POST(request) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object
-        const status = subscription.status === 'active' ? 'active' : 'inactive'
-        
-        await supabase
-          .from('profiles')
-          .update({ subscription_status: status })
-          .eq('stripe_subscription_id', subscription.id)
+        const userId = subscription.metadata?.supabase_user_id
+
+        if (userId) {
+          const status = subscription.status === 'active' ? 'active' : 'past_due'
+          await supabase
+            .from('profiles')
+            .update({ subscription_status: status })
+            .eq('id', userId)
+        }
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
-        
-        await supabase
-          .from('profiles')
-          .update({ subscription_status: 'free' })
-          .eq('stripe_subscription_id', subscription.id)
-        break
-      }
+        const userId = subscription.metadata?.supabase_user_id
 
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object
-        
-        await supabase
-          .from('profiles')
-          .update({ subscription_status: 'past_due' })
-          .eq('stripe_customer_id', invoice.customer)
+        if (userId) {
+          await supabase
+            .from('profiles')
+            .update({ subscription_status: 'canceled' })
+            .eq('id', userId)
+        }
         break
       }
     }
-
-    return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error('Webhook handler error:', error)
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
+  } catch (err) {
+    console.error('Webhook handler error:', err)
   }
+
+  return NextResponse.json({ received: true })
 }

@@ -2,92 +2,67 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { getSupabase } from '@/lib/supabase'
 
 function CheckIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
 }
 
-export default function LandingPage() {
+export default function HomePage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [hasAccess, setHasAccess] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const checkUser = async () => {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      )
-
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const checkAuth = async () => {
+      const supabase = getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
       
-      if (currentUser) {
-        setUser(currentUser)
-        
-        // Check access
-        if (currentUser.email === 'ssiagos@hotmail.com') {
+      if (user) {
+        setUser(user)
+        // Check if admin or has subscription
+        if (user.email === 'ssiagos@hotmail.com') {
           setHasAccess(true)
         } else {
           const { data: profile } = await supabase
             .from('profiles')
             .select('subscription_status')
-            .eq('id', currentUser.id)
+            .eq('id', user.id)
             .single()
-          
           setHasAccess(profile?.subscription_status === 'active')
         }
       }
-      
-      setLoading(false)
     }
-
-    checkUser()
+    checkAuth()
   }, [])
-
-  const handleSubscribe = () => {
-    router.push('/signup?redirect=checkout')
-  }
-
-  const scrollToHowItWorks = () => {
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
-  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       {/* Header */}
       <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-        <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
+        <a href="/" style={{ fontSize: '22px', fontWeight: 700 }}>
           <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
         </a>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {!loading && user && hasAccess ? (
-            <>
-              <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                Get Access - £9/mo
-              </a>
-              <a href="/dashboard" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                Enter Journal
-              </a>
-            </>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+            Get Access - £9/mo
+          </a>
+          {user && hasAccess ? (
+            <a href="/dashboard" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+              Enter Journal
+            </a>
           ) : (
-            <>
-              <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                Get Access - £9/mo
-              </a>
-              <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                Member Login
-              </a>
-            </>
+            <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+              Member Login
+            </a>
           )}
         </div>
       </header>
 
       {/* Hero */}
-      <section style={{ padding: '80px 48px', textAlign: 'center' }}>
+      <section style={{ padding: '100px 48px', textAlign: 'center' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1.1, marginBottom: '16px', color: '#fff' }}>
+          <h1 style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1.1, marginBottom: '16px' }}>
             The Trading Journal
           </h1>
           <h2 style={{ fontSize: '56px', fontWeight: 800, color: '#22c55e', marginBottom: '24px' }}>
@@ -95,34 +70,33 @@ export default function LandingPage() {
           </h2>
           <p style={{ fontSize: '20px', color: '#888', marginBottom: '40px', lineHeight: 1.6 }}>
             Track your trades, analyze your performance, and discover patterns that make you profitable.
-            Customizable fields, powerful statistics, and beautiful visualizations.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <button onClick={handleSubscribe} style={{ padding: '18px 40px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px', cursor: 'pointer' }}>
+            <a href="/signup?redirect=checkout" style={{ padding: '18px 40px', background: '#22c55e', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px' }}>
               Get Started - £9/month
-            </button>
-            <button onClick={scrollToHowItWorks} style={{ padding: '18px 40px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '18px', cursor: 'pointer' }}>
+            </a>
+            <a href="#features" style={{ padding: '18px 40px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '18px' }}>
               Learn More
-            </button>
+            </a>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section style={{ padding: '60px 48px', background: '#0d0d12' }}>
+      <section id="features" style={{ padding: '60px 48px', background: '#0d0d12' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '48px', color: '#fff' }}>Everything You Need</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '48px' }}>Everything You Need</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             {[
-              { title: 'Multiple Journals', desc: 'Create separate journals for each account - 10k, 25k, 50k. Keep everything organized.' },
-              { title: 'Smart Statistics', desc: 'See PnL, winrate, and RR broken down by any field. Discover which setups work.' },
+              { title: 'Multiple Journals', desc: 'Create separate journals for each account - 10k, 25k, 50k, FTMO, etc.' },
+              { title: 'Smart Statistics', desc: 'See PnL, winrate, and RR. Discover which setups work best for you.' },
               { title: 'Trade Screenshots', desc: 'Attach images to every trade. Review your entries and exits visually.' },
-              { title: 'Custom Fields', desc: 'Create your own inputs - timeframes, sessions, setups. Make it work for YOU.' },
-              { title: 'Beautiful Charts', desc: 'Interactive equity curves. Watch your progress over time.' },
-              { title: 'Cloud Synced', desc: 'Access from any device. Your data is securely stored and always available.' },
+              { title: 'Custom Fields', desc: 'Create your own fields - timeframes, sessions, setups. Make it yours.' },
+              { title: 'Equity Curves', desc: 'Beautiful charts showing your progress over time.' },
+              { title: 'Cloud Synced', desc: 'Access from any device. Your data is always safe and available.' },
             ].map((f, i) => (
               <div key={i} style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '16px', padding: '24px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '10px', color: '#fff' }}>{f.title}</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '10px' }}>{f.title}</h3>
                 <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             ))}
@@ -130,44 +104,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" style={{ padding: '60px 48px' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, textAlign: 'center', marginBottom: '48px', color: '#fff' }}>How It Works</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
-            {[
-              { step: '1', title: 'Subscribe', desc: 'Sign up with a simple monthly subscription' },
-              { step: '2', title: 'Log Trades', desc: 'Record your trades with custom fields' },
-              { step: '3', title: 'Analyze', desc: 'Discover patterns and improve your edge' },
-            ].map((item, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', background: '#22c55e', borderRadius: '50%', fontWeight: 700, fontSize: '20px', marginBottom: '16px', color: '#fff' }}>{item.step}</div>
-                <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px', color: '#fff' }}>{item.title}</h3>
-                <p style={{ fontSize: '14px', color: '#888' }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Pricing */}
-      <section style={{ padding: '60px 48px', background: '#0d0d12' }}>
-        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px', color: '#fff' }}>Simple Pricing</h2>
-          <p style={{ color: '#888', marginBottom: '32px' }}>One plan, everything included</p>
-
-          <div style={{ background: 'linear-gradient(135deg, #14141a 0%, #1a2a1a 100%)', border: '2px solid #22c55e', borderRadius: '16px', padding: '32px', textAlign: 'left', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '-12px', right: '20px', background: '#22c55e', color: '#000', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px' }}>FULL ACCESS</div>
-            <div style={{ fontSize: '14px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Pro</div>
-            <div style={{ fontSize: '40px', fontWeight: 700, marginBottom: '24px', color: '#fff' }}>£9<span style={{ fontSize: '16px', color: '#666' }}>/month</span></div>
-            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
-              {['Unlimited Journals', 'Advanced Statistics', 'Unlimited Trades', 'Custom Fields', 'Data Stored Forever'].map((f, i) => (
-                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#bbb', fontSize: '14px' }}><CheckIcon /> {f}</li>
+      <section style={{ padding: '60px 48px' }}>
+        <div style={{ maxWidth: '450px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '32px' }}>Simple Pricing</h2>
+          <div style={{ background: 'linear-gradient(135deg, #14141a 0%, #1a2a1a 100%)', border: '2px solid #22c55e', borderRadius: '16px', padding: '32px', textAlign: 'left' }}>
+            <div style={{ fontSize: '14px', color: '#22c55e', textTransform: 'uppercase', marginBottom: '8px' }}>Full Access</div>
+            <div style={{ fontSize: '48px', fontWeight: 700, marginBottom: '24px' }}>£9<span style={{ fontSize: '18px', color: '#666' }}>/month</span></div>
+            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '32px' }}>
+              {['Unlimited Journals', 'Unlimited Trades', 'Advanced Statistics', 'Custom Fields', 'Cloud Storage'].map((f, i) => (
+                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#bbb', fontSize: '15px', marginBottom: '12px' }}><CheckIcon /> {f}</li>
               ))}
             </ul>
-            <button onClick={handleSubscribe} style={{ width: '100%', padding: '14px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '16px' }}>
+            <a href="/signup?redirect=checkout" style={{ display: 'block', padding: '16px', background: '#22c55e', borderRadius: '10px', color: '#fff', fontWeight: 700, fontSize: '16px', textAlign: 'center' }}>
               Subscribe Now
-            </button>
+            </a>
           </div>
         </div>
       </section>

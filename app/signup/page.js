@@ -1,28 +1,19 @@
 'use client'
 
-import { useAuth } from '@/components/AuthProvider'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { getSupabase } from '@/lib/supabase'
 
 export default function SignupPage() {
-  const { user, hasAccess } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || null
+  const redirectTo = searchParams.get('redirect')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
-  const [authLoading, setAuthLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-
-  // Redirect if already logged in with access
-  useEffect(() => {
-    if (user && hasAccess) {
-      router.push('/dashboard')
-    }
-  }, [user, hasAccess, router])
 
   const handleSignup = async (e) => {
     e.preventDefault()
@@ -38,48 +29,48 @@ export default function SignupPage() {
       return
     }
 
-    setAuthLoading(true)
+    setLoading(true)
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      )
-
-      const { error } = await supabase.auth.signUp({
+      const supabase = getSupabase()
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback${redirectTo ? `?redirect=${redirectTo}` : ''}`
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       })
       
       if (error) throw error
-      setSuccess(true)
+
+      // If email confirmation is disabled, user is logged in immediately
+      if (data.session) {
+        if (redirectTo === 'checkout') {
+          router.push('/pricing?checkout=true')
+        } else {
+          router.push('/pricing?needsub=true')
+        }
+      } else {
+        setSuccess(true)
+      }
     } catch (err) {
       setError(err.message || 'Signup failed')
+      setLoading(false)
     }
-    setAuthLoading(false)
   }
 
-  // Success screen
   if (success) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
         <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-          <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
+          <a href="/" style={{ fontSize: '22px', fontWeight: 700 }}>
             <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
           </a>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <a href="/pricing" style={{ padding: '12px 24px', color: '#aaa', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
-            <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>Member Login</a>
-          </div>
         </header>
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
           <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '40px', width: '400px', textAlign: 'center' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '12px', color: '#fff' }}>Check your email</h2>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>Check your email</h2>
             <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
               We sent a confirmation link to <strong style={{ color: '#fff' }}>{email}</strong>
             </p>
@@ -94,12 +85,16 @@ export default function SignupPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       {/* Header */}
       <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-        <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
+        <a href="/" style={{ fontSize: '22px', fontWeight: 700 }}>
           <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
         </a>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <a href="/pricing" style={{ padding: '12px 24px', color: '#aaa', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
-          <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>Member Login</a>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+            Get Access - £9/mo
+          </a>
+          <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px' }}>
+            Member Login
+          </a>
         </div>
       </header>
 
@@ -107,7 +102,7 @@ export default function SignupPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
         <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '20px', padding: '40px', width: '400px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px', color: '#fff' }}>Create Account</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Create Account</h1>
             <p style={{ color: '#888', fontSize: '14px' }}>Start your trading journal today</p>
           </div>
 
@@ -126,7 +121,7 @@ export default function SignupPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="your@email.com"
-                style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '15px', boxSizing: 'border-box' }}
               />
             </div>
             <div style={{ marginBottom: '16px' }}>
@@ -137,7 +132,7 @@ export default function SignupPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '15px', boxSizing: 'border-box' }}
               />
             </div>
             <div style={{ marginBottom: '24px' }}>
@@ -148,21 +143,20 @@ export default function SignupPage() {
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '15px', boxSizing: 'border-box' }}
               />
             </div>
             <button
               type="submit"
-              disabled={authLoading}
-              style={{ width: '100%', padding: '14px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: authLoading ? 'wait' : 'pointer', opacity: authLoading ? 0.7 : 1 }}
+              disabled={loading}
+              style={{ width: '100%', padding: '14px', background: loading ? '#166534' : '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '16px', cursor: loading ? 'wait' : 'pointer' }}
             >
-              {authLoading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
           <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#888' }}>
-            Already have an account?{' '}
-            <a href="/login" style={{ color: '#22c55e', textDecoration: 'none' }}>Sign in</a>
+            Already have an account? <a href="/login" style={{ color: '#22c55e' }}>Sign in</a>
           </p>
         </div>
       </div>

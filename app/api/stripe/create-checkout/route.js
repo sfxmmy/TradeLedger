@@ -1,17 +1,33 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function POST(request) {
   try {
-    const supabase = await createServerSupabaseClient()
+    // Get user from supabase
+    const cookieStore = cookies()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value
+          }
+        }
+      }
+    )
+
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get or create Stripe customer
+    // Check if user already has a stripe customer ID
     const { data: profile } = await supabase
       .from('profiles')
       .select('stripe_customer_id')
@@ -20,10 +36,11 @@ export async function POST(request) {
 
     let customerId = profile?.stripe_customer_id
 
+    // Create customer if needed
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
-        metadata: { userId: user.id },
+        metadata: { supabase_user_id: user.id }
       })
       customerId = customer.id
 
@@ -33,13 +50,19 @@ export async function POST(request) {
         .eq('id', user.id)
     }
 
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{
+        price: process.env.STRIPE_PRICE_ID,
+        quantity: 1,
+      }],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      metadata: { userId: user.id },
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+      subscription_data: {
+        metadata: { supabase_user_id: user.id }
+      }
     })
 
     return NextResponse.json({ url: session.url })
