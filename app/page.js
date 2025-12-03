@@ -3,7 +3,6 @@
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
 
 function CheckIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -12,55 +11,22 @@ function CheckIcon() {
 export default function LandingPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
-  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
-    async function checkUserAndRedirect() {
-      if (!loading && user && !redirecting) {
-        setRedirecting(true)
-        try {
-          const supabase = createClient()
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('subscription_status')
-            .eq('id', user.id)
-            .single()
-
-          if (profile?.subscription_status === 'active') {
-            router.push('/dashboard')
-          } else {
-            router.push('/pricing')
-          }
-        } catch (error) {
-          console.error('Error checking subscription:', error)
-          setRedirecting(false)
-        }
-      }
+    if (!loading && user) {
+      router.push('/dashboard')
     }
-    
-    checkUserAndRedirect()
-  }, [user, loading, router, redirecting])
+  }, [user, loading, router])
 
-  const handleSubscribe = async () => {
-    setCheckoutLoading(true)
-    try {
-      const res = await fetch('/api/stripe/create-checkout-public', { method: 'POST' })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-    }
-    setCheckoutLoading(false)
+  const handleSubscribe = () => {
+    router.push('/signup?redirect=checkout')
   }
 
   const scrollToHowItWorks = () => {
     document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  if (loading || redirecting) {
+  if (loading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777' }}>Loading...</div>
   }
 
@@ -99,8 +65,8 @@ export default function LandingPage() {
             Customizable fields, powerful statistics, and beautiful visualizations.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <button onClick={handleSubscribe} disabled={checkoutLoading} style={{ padding: '16px 36px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px', cursor: 'pointer' }}>
-              {checkoutLoading ? 'Loading...' : 'Purchase Membership: £9.00/month'}
+            <button onClick={handleSubscribe} style={{ padding: '16px 36px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px', cursor: 'pointer' }}>
+              Purchase Membership: £9.00/month
             </button>
             <button onClick={scrollToHowItWorks} style={{ padding: '16px 36px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '18px', cursor: 'pointer' }}>
               More Info

@@ -1,15 +1,18 @@
 import './globals.css'
+import { AuthProvider } from '@/components/AuthProvider'
 
 export const metadata = {
   title: 'Trading Journal Pro',
-  description: 'Professional trading journal with analytics',
+  description: 'Professional trading journal for serious traders',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, background: '#000', color: '#fff' }}>
-        {children}
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )
