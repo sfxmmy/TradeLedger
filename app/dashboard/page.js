@@ -2,78 +2,109 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/components/AuthProvider'
+import { getSupabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, hasAccess, loading: authLoading, signOut, supabase } = useAuth()
+  const [user, setUser] = useState(null)
   const [accounts, setAccounts] = useState([])
   const [trades, setTrades] = useState({})
-  const [dataLoaded, setDataLoaded] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [name, setName] = useState('')
   const [balance, setBalance] = useState('')
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    if (authLoading) return
+    checkAuthAndLoadData()
+  }, [])
 
-    if (!user) {
+  async function checkAuthAndLoadData() {
+    try {
+      const supabase = getSupabase()
+      if (!supabase) {
+        router.push('/login')
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      // Check access
+      const isAdmin = user.email === 'ssiagos@hotmail.com'
+      
+      if (!isAdmin) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.subscription_status !== 'active') {
+          router.push('/pricing')
+          return
+        }
+      }
+
+      setUser(user)
+
+      // Load accounts
+      const { data: accountsData, error: accountsError } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+
+      if (accountsError) {
+        console.error('Error loading accounts:', accountsError)
+      }
+
+      setAccounts(accountsData || [])
+
+      // Load trades for each account
+      if (accountsData?.length) {
+        const tradesMap = {}
+        for (const acc of accountsData) {
+          const { data: tradesData } = await supabase
+            .from('trades')
+            .select('*')
+            .eq('account_id', acc.id)
+            .order('date', { ascending: false })
+          tradesMap[acc.id] = tradesData || []
+        }
+        setTrades(tradesMap)
+      }
+
+    } catch (err) {
+      console.error('Dashboard error:', err)
       router.push('/login')
       return
     }
 
-    if (!hasAccess) {
-      router.push('/pricing')
-      return
-    }
-
-    const loadData = async () => {
-      try {
-        const { data: accountsData, error: accountsError } = await supabase
-          .from('accounts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true })
-
-        if (accountsError) {
-          console.error('Error loading accounts:', accountsError)
-        }
-
-        setAccounts(accountsData || [])
-
-        if (accountsData?.length) {
-          const tradesMap = {}
-          for (const acc of accountsData) {
-            const { data: tradesData } = await supabase
-              .from('trades')
-              .select('*')
-              .eq('account_id', acc.id)
-              .order('date', { ascending: false })
-            tradesMap[acc.id] = tradesData || []
-          }
-          setTrades(tradesMap)
-        }
-      } catch (err) {
-        console.error('Error loading data:', err)
-      }
-
-      setDataLoaded(true)
-    }
-
-    loadData()
-  }, [user, hasAccess, authLoading, router, supabase])
-
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
+    setLoading(false)
   }
 
-  const createJournal = async () => {
-    if (!name.trim() || !balance) return
+  async function handleSignOut() {
+    try {
+      const supabase = getSupabase()
+      await supabase.auth.signOut()
+      router.push('/')
+    } catch (err) {
+      console.error('Sign out error:', err)
+    }
+  }
+
+  async function createJournal() {
+    if (!name.trim() || !balance || !user) return
 
     setCreating(true)
+    
     try {
+      const supabase = getSupabase()
       const { data, error } = await supabase
         .from('accounts')
         .insert({ 
@@ -98,10 +129,11 @@ export default function DashboardPage() {
     } catch (err) {
       alert('Error: ' + err.message)
     }
+    
     setCreating(false)
   }
 
-  if (authLoading || !dataLoaded) {
+  if (loading) {
     return (
       <div style={{ 
         minHeight: '100vh', 
@@ -115,7 +147,7 @@ export default function DashboardPage() {
             <span style={{ color: '#22c55e' }}>LSD</span>
             <span style={{ color: '#fff' }}>TRADE+</span>
           </div>
-          <div style={{ color: '#666' }}>Loading...</div>
+          <div style={{ color: '#666' }}>Loading dashboard...</div>
         </div>
       </div>
     )
@@ -238,14 +270,8 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
-                          Current Balance
-                        </div>
-                        <div style={{ 
-                          fontSize: '20px', 
-                          fontWeight: 700, 
-                          color: totalPnl >= 0 ? '#22c55e' : '#ef4444' 
-                        }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Current Balance</div>
+                        <div style={{ fontSize: '20px', fontWeight: 700, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' }}>
                           ${currentBalance.toLocaleString()}
                         </div>
                       </div>
@@ -268,11 +294,7 @@ export default function DashboardPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                       <div style={{ background: '#0a0a0f', borderRadius: '10px', padding: '16px' }}>
                         <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>Total PnL</div>
-                        <div style={{ 
-                          fontSize: '20px', 
-                          fontWeight: 600, 
-                          color: totalPnl >= 0 ? '#22c55e' : '#ef4444' 
-                        }}>
+                        <div style={{ fontSize: '20px', fontWeight: 600, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' }}>
                           {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString()}
                         </div>
                       </div>
@@ -296,7 +318,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Modal */}
+        {/* Create Journal Modal */}
         {showModal && (
           <div 
             style={{ 
@@ -324,13 +346,7 @@ export default function DashboardPage() {
                 Create New Journal
               </h2>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '12px', 
-                  color: '#888', 
-                  marginBottom: '8px', 
-                  textTransform: 'uppercase' 
-                }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
                   Journal Name
                 </label>
                 <input 
@@ -352,13 +368,7 @@ export default function DashboardPage() {
                 />
               </div>
               <div style={{ marginBottom: '28px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '12px', 
-                  color: '#888', 
-                  marginBottom: '8px', 
-                  textTransform: 'uppercase' 
-                }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
                   Starting Balance ($)
                 </label>
                 <input 
@@ -391,7 +401,8 @@ export default function DashboardPage() {
                     color: '#fff', 
                     fontWeight: 600, 
                     fontSize: '15px', 
-                    cursor: creating ? 'wait' : 'pointer' 
+                    cursor: creating ? 'not-allowed' : 'pointer',
+                    opacity: (creating || !name.trim() || !balance) ? 0.7 : 1
                   }}
                 >
                   {creating ? 'Creating...' : 'Create Journal'}

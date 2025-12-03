@@ -18,6 +18,7 @@ a {
 
 button {
   font-family: inherit;
+  cursor: pointer;
 }
 
 input, select, textarea {
@@ -27,4 +28,22 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: 2px solid #22c55e;
   outline-offset: -2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }

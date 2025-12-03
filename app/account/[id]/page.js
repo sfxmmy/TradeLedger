@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { useAuth } from '@/components/AuthProvider'
+import { getSupabase } from '@/lib/supabase'
 
 export default function AccountPage() {
   const router = useRouter()
   const params = useParams()
   const accountId = params.id
-  const { user, hasAccess, loading: authLoading, supabase } = useAuth()
-
+  
+  const [user, setUser] = useState(null)
   const [account, setAccount] = useState(null)
   const [trades, setTrades] = useState([])
-  const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showAddTrade, setShowAddTrade] = useState(false)
   const [saving, setSaving] = useState(false)
   const [tradeForm, setTradeForm] = useState({
@@ -26,54 +26,82 @@ export default function AccountPage() {
   })
 
   useEffect(() => {
-    if (authLoading) return
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    if (!hasAccess) {
-      router.push('/pricing')
-      return
-    }
+    checkAuthAndLoadData()
+  }, [])
 
-    const loadData = async () => {
-      try {
-        const { data: accountData, error: accountError } = await supabase
-          .from('accounts')
-          .select('*')
-          .eq('id', accountId)
-          .eq('user_id', user.id)
+  async function checkAuthAndLoadData() {
+    try {
+      const supabase = getSupabase()
+      if (!supabase) {
+        router.push('/login')
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      // Check access
+      const isAdmin = user.email === 'ssiagos@hotmail.com'
+      
+      if (!isAdmin) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
           .single()
 
-        if (accountError || !accountData) {
-          router.push('/dashboard')
+        if (profile?.subscription_status !== 'active') {
+          router.push('/pricing')
           return
         }
-        setAccount(accountData)
+      }
 
-        const { data: tradesData } = await supabase
-          .from('trades')
-          .select('*')
-          .eq('account_id', accountId)
-          .order('date', { ascending: false })
+      setUser(user)
 
-        setTrades(tradesData || [])
-      } catch (err) {
-        console.error('Error loading data:', err)
+      // Load account
+      const { data: accountData, error: accountError } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('id', accountId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (accountError || !accountData) {
         router.push('/dashboard')
         return
       }
-      setReady(true)
+
+      setAccount(accountData)
+
+      // Load trades
+      const { data: tradesData } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('account_id', accountId)
+        .order('date', { ascending: false })
+
+      setTrades(tradesData || [])
+
+    } catch (err) {
+      console.error('Account page error:', err)
+      router.push('/dashboard')
+      return
     }
 
-    loadData()
-  }, [user, hasAccess, authLoading, accountId, router, supabase])
+    setLoading(false)
+  }
 
-  const addTrade = async () => {
+  async function addTrade() {
     if (!tradeForm.symbol || !tradeForm.pnl) return
+    
     setSaving(true)
 
     try {
+      const supabase = getSupabase()
       const { data, error } = await supabase
         .from('trades')
         .insert({
@@ -109,13 +137,15 @@ export default function AccountPage() {
     } catch (err) {
       alert('Error: ' + err.message)
     }
+    
     setSaving(false)
   }
 
-  const deleteTrade = async (tradeId) => {
+  async function deleteTrade(tradeId) {
     if (!confirm('Delete this trade?')) return
-    
+
     try {
+      const supabase = getSupabase()
       await supabase.from('trades').delete().eq('id', tradeId)
       setTrades(trades.filter(t => t.id !== tradeId))
     } catch (err) {
@@ -123,21 +153,27 @@ export default function AccountPage() {
     }
   }
 
-  if (!ready) {
+  if (loading) {
     return (
       <div style={{ 
         minHeight: '100vh', 
         background: '#0a0a0f', 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: 'center', 
-        color: '#666' 
+        justifyContent: 'center' 
       }}>
-        Loading...
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>
+            <span style={{ color: '#22c55e' }}>LSD</span>
+            <span style={{ color: '#fff' }}>TRADE+</span>
+          </div>
+          <div style={{ color: '#666' }}>Loading...</div>
+        </div>
       </div>
     )
   }
 
+  // Calculate stats
   const wins = trades.filter(t => t.outcome === 'win').length
   const losses = trades.filter(t => t.outcome === 'loss').length
   const totalPnl = trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0)
@@ -187,54 +223,22 @@ export default function AccountPage() {
         }}>
           {[
             { label: 'Current Balance', value: `$${currentBalance.toLocaleString()}` },
-            { 
-              label: 'Total PnL', 
-              value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, 
-              color: totalPnl >= 0 ? '#22c55e' : '#ef4444' 
-            },
-            { 
-              label: 'Win Rate', 
-              value: `${winrate}%`, 
-              color: winrate >= 50 ? '#22c55e' : '#ef4444' 
-            },
+            { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
+            { label: 'Win Rate', value: `${winrate}%`, color: winrate >= 50 ? '#22c55e' : '#ef4444' },
             { label: 'Total Trades', value: trades.length },
             { label: 'Avg RR', value: `${avgRR}R` }
           ].map((s, i) => (
-            <div 
-              key={i} 
-              style={{ 
-                background: '#14141a', 
-                border: '1px solid #222230', 
-                borderRadius: '12px', 
-                padding: '20px' 
-              }}
-            >
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#666', 
-                marginBottom: '8px', 
-                textTransform: 'uppercase' 
-              }}>
-                {s.label}
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: s.color || '#fff' }}>
-                {s.value}
-              </div>
+            <div key={i} style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px', textTransform: 'uppercase' }}>{s.label}</div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: s.color || '#fff' }}>{s.value}</div>
             </div>
           ))}
         </div>
 
         {/* Trades Table */}
-        <div style={{ 
-          background: '#14141a', 
-          border: '1px solid #222230', 
-          borderRadius: '14px', 
-          overflow: 'hidden' 
-        }}>
+        <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '14px', overflow: 'hidden' }}>
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #222230' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>
-              Trade History ({trades.length} trades)
-            </h3>
+            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Trade History ({trades.length} trades)</h3>
           </div>
 
           {trades.length === 0 ? (
@@ -247,17 +251,14 @@ export default function AccountPage() {
                 <thead>
                   <tr style={{ background: '#0a0a0f' }}>
                     {['Date', 'Symbol', 'Direction', 'Outcome', 'PnL', 'RR', ''].map((h, i) => (
-                      <th 
-                        key={i} 
-                        style={{ 
-                          padding: '12px 16px', 
-                          textAlign: i >= 4 ? 'right' : 'left', 
-                          color: '#888', 
-                          fontSize: '12px', 
-                          fontWeight: 600, 
-                          textTransform: 'uppercase' 
-                        }}
-                      >
+                      <th key={i} style={{ 
+                        padding: '12px 16px', 
+                        textAlign: i >= 4 ? 'right' : 'left', 
+                        color: '#888', 
+                        fontSize: '12px', 
+                        fontWeight: 600, 
+                        textTransform: 'uppercase' 
+                      }}>
                         {h}
                       </th>
                     ))}
@@ -267,15 +268,9 @@ export default function AccountPage() {
                   {trades.map(trade => (
                     <tr key={trade.id} style={{ borderBottom: '1px solid #1a1a22' }}>
                       <td style={{ padding: '14px 16px', color: '#aaa', fontSize: '14px' }}>
-                        {new Date(trade.date).toLocaleDateString('en-GB', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}
+                        {new Date(trade.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: 600, fontSize: '14px' }}>
-                        {trade.symbol}
-                      </td>
+                      <td style={{ padding: '14px 16px', fontWeight: 600, fontSize: '14px' }}>{trade.symbol}</td>
                       <td style={{ padding: '14px 16px' }}>
                         <span style={{ 
                           padding: '4px 10px', 
@@ -294,33 +289,20 @@ export default function AccountPage() {
                           borderRadius: '4px', 
                           fontSize: '12px', 
                           fontWeight: 600, 
-                          background: trade.outcome === 'win' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', 
-                          color: trade.outcome === 'win' ? '#22c55e' : '#ef4444' 
+                          background: trade.outcome === 'win' ? 'rgba(34,197,94,0.1)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.1)', 
+                          color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' 
                         }}>
                           {trade.outcome?.toUpperCase()}
                         </span>
                       </td>
-                      <td style={{ 
-                        padding: '14px 16px', 
-                        textAlign: 'right', 
-                        fontWeight: 600, 
-                        color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444' 
-                      }}>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 600, color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444' }}>
                         {parseFloat(trade.pnl) >= 0 ? '+' : ''}${parseFloat(trade.pnl || 0).toLocaleString()}
                       </td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right', color: '#aaa' }}>
-                        {trade.rr}R
-                      </td>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', color: '#aaa' }}>{trade.rr || 0}R</td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                         <button 
                           onClick={() => deleteTrade(trade.id)} 
-                          style={{ 
-                            background: 'transparent', 
-                            border: 'none', 
-                            color: '#666', 
-                            cursor: 'pointer', 
-                            fontSize: '18px' 
-                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '18px' }}
                         >
                           ×
                         </button>
@@ -336,147 +318,55 @@ export default function AccountPage() {
         {/* Add Trade Modal */}
         {showAddTrade && (
           <div 
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              background: 'rgba(0,0,0,0.85)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              zIndex: 100 
-            }} 
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} 
             onClick={() => setShowAddTrade(false)}
           >
             <div 
-              style={{ 
-                background: '#14141a', 
-                border: '1px solid #222230', 
-                borderRadius: '16px', 
-                padding: '32px', 
-                width: '500px' 
-              }} 
+              style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '16px', padding: '32px', width: '500px' }} 
               onClick={e => e.stopPropagation()}
             >
               <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>Add New Trade</h2>
 
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '16px', 
-                marginBottom: '16px' 
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    Symbol
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Symbol</label>
                   <input 
                     type="text" 
                     value={tradeForm.symbol} 
                     onChange={e => setTradeForm({...tradeForm, symbol: e.target.value})} 
                     placeholder="e.g. EURUSD" 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }} 
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} 
                   />
                 </div>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    Date
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Date</label>
                   <input 
                     type="date" 
                     value={tradeForm.date} 
                     onChange={e => setTradeForm({...tradeForm, date: e.target.value})} 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }} 
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
 
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '16px', 
-                marginBottom: '16px' 
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    Direction
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Direction</label>
                   <select 
                     value={tradeForm.direction} 
                     onChange={e => setTradeForm({...tradeForm, direction: e.target.value})} 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }}
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }}
                   >
                     <option value="long">Long</option>
                     <option value="short">Short</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    Outcome
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Outcome</label>
                   <select 
                     value={tradeForm.outcome} 
                     onChange={e => setTradeForm({...tradeForm, outcome: e.target.value})} 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }}
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }}
                   >
                     <option value="win">Win</option>
                     <option value="loss">Loss</option>
@@ -485,95 +375,38 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '16px', 
-                marginBottom: '16px' 
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    PnL ($)
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>PnL ($)</label>
                   <input 
                     type="number" 
                     value={tradeForm.pnl} 
                     onChange={e => setTradeForm({...tradeForm, pnl: e.target.value})} 
                     placeholder="e.g. 150 or -50" 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }} 
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} 
                   />
                 </div>
                 <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '12px', 
-                    color: '#888', 
-                    marginBottom: '6px', 
-                    textTransform: 'uppercase' 
-                  }}>
-                    RR
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>RR</label>
                   <input 
                     type="number" 
                     step="0.1" 
                     value={tradeForm.rr} 
                     onChange={e => setTradeForm({...tradeForm, rr: e.target.value})} 
                     placeholder="e.g. 2.5" 
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      background: '#0a0a0f', 
-                      border: '1px solid #2a2a35', 
-                      borderRadius: '8px', 
-                      color: '#fff', 
-                      fontSize: '14px', 
-                      boxSizing: 'border-box' 
-                    }} 
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
 
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '12px', 
-                  color: '#888', 
-                  marginBottom: '6px', 
-                  textTransform: 'uppercase' 
-                }}>
-                  Notes
-                </label>
+                <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Notes</label>
                 <textarea 
                   value={tradeForm.notes} 
                   onChange={e => setTradeForm({...tradeForm, notes: e.target.value})} 
                   placeholder="Optional notes..." 
                   rows={2} 
-                  style={{ 
-                    width: '100%', 
-                    padding: '12px', 
-                    background: '#0a0a0f', 
-                    border: '1px solid #2a2a35', 
-                    borderRadius: '8px', 
-                    color: '#fff', 
-                    fontSize: '14px', 
-                    boxSizing: 'border-box', 
-                    resize: 'none' 
-                  }} 
+                  style={{ width: '100%', padding: '12px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box', resize: 'none' }} 
                 />
               </div>
 
@@ -590,24 +423,15 @@ export default function AccountPage() {
                     color: '#fff', 
                     fontWeight: 600, 
                     fontSize: '15px', 
-                    cursor: saving ? 'wait' : 'pointer' 
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: (saving || !tradeForm.symbol || !tradeForm.pnl) ? 0.7 : 1
                   }}
                 >
                   {saving ? 'Saving...' : 'Add Trade'}
                 </button>
                 <button 
                   onClick={() => setShowAddTrade(false)} 
-                  style={{ 
-                    flex: 1, 
-                    padding: '14px', 
-                    background: '#1a1a24', 
-                    border: '1px solid #2a2a35', 
-                    borderRadius: '10px', 
-                    color: '#fff', 
-                    fontWeight: 600, 
-                    fontSize: '15px', 
-                    cursor: 'pointer' 
-                  }}
+                  style={{ flex: 1, padding: '14px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>

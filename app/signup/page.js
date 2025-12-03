@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/components/AuthProvider'
+import { getSupabase } from '@/lib/supabase'
 
 export default function SignupPage() {
   const router = useRouter()
-  const { supabase } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -16,7 +15,7 @@ export default function SignupPage() {
   const [redirectToCheckout, setRedirectToCheckout] = useState(false)
 
   useEffect(() => {
-    // Check URL params on client side only
+    // Check URL params on client side
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       if (params.get('redirect') === 'checkout') {
@@ -25,10 +24,11 @@ export default function SignupPage() {
     }
   }, [])
 
-  const handleSignup = async (e) => {
+  async function handleSignup(e) {
     e.preventDefault()
     setError('')
 
+    // Validation
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
@@ -42,33 +42,52 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
+      const supabase = getSupabase()
+      if (!supabase) {
+        setError('Connection error. Please refresh and try again.')
+        setLoading(false)
+        return
+      }
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`
         }
       })
-      
-      if (error) throw error
 
+      if (signUpError) {
+        console.error('Signup error:', signUpError)
+        setError(signUpError.message || 'Signup failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Check if user was created and logged in (email confirmation disabled)
       if (data.session) {
-        // User is logged in immediately (email confirmation disabled)
+        // User is logged in immediately - redirect to pricing/checkout
         if (redirectToCheckout) {
           router.push('/pricing?checkout=true')
         } else {
           router.push('/pricing')
         }
-      } else {
-        // Email confirmation required
+      } else if (data.user && !data.session) {
+        // Email confirmation is required
         setSuccess(true)
+      } else {
+        setError('Signup failed. Please try again.')
+        setLoading(false)
       }
+
     } catch (err) {
-      setError(err.message || 'Signup failed')
+      console.error('Signup error:', err)
+      setError('An error occurred. Please try again.')
       setLoading(false)
     }
   }
 
+  // Success screen - email confirmation required
   if (success) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
@@ -92,7 +111,20 @@ export default function SignupPage() {
             <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
               We sent a confirmation link to <strong style={{ color: '#fff' }}>{email}</strong>
             </p>
-            <a href="/login" style={{ color: '#22c55e', fontSize: '14px' }}>Back to login</a>
+            <p style={{ color: '#666', fontSize: '13px', marginBottom: '24px' }}>
+              Click the link in the email to verify your account, then return here to log in.
+            </p>
+            <a href="/login" style={{ 
+              display: 'inline-block',
+              padding: '12px 24px',
+              background: '#22c55e',
+              borderRadius: '8px',
+              color: '#fff',
+              fontWeight: 600,
+              fontSize: '14px'
+            }}>
+              Go to Login
+            </a>
           </div>
         </div>
       </div>
@@ -101,6 +133,7 @@ export default function SignupPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
+      {/* Header */}
       <header style={{ 
         padding: '20px 48px', 
         display: 'flex', 
@@ -113,16 +146,6 @@ export default function SignupPage() {
           <span style={{ color: '#fff' }}>TRADE+</span>
         </a>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <a href="/pricing" style={{ 
-            padding: '12px 24px', 
-            background: '#22c55e', 
-            borderRadius: '8px', 
-            color: '#fff', 
-            fontWeight: 600, 
-            fontSize: '14px' 
-          }}>
-            Get Access - £9/mo
-          </a>
           <a href="/login" style={{ 
             padding: '12px 24px', 
             background: '#1a1a24', 
@@ -137,6 +160,7 @@ export default function SignupPage() {
         </div>
       </header>
 
+      {/* Signup Form */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
         <div style={{ 
           background: '#14141a', 
@@ -182,6 +206,7 @@ export default function SignupPage() {
                 onChange={e => setEmail(e.target.value)} 
                 required 
                 placeholder="your@email.com" 
+                autoComplete="email"
                 style={{ 
                   width: '100%', 
                   padding: '14px', 
@@ -210,6 +235,7 @@ export default function SignupPage() {
                 onChange={e => setPassword(e.target.value)} 
                 required 
                 placeholder="••••••••" 
+                autoComplete="new-password"
                 style={{ 
                   width: '100%', 
                   padding: '14px', 
@@ -238,6 +264,7 @@ export default function SignupPage() {
                 onChange={e => setConfirmPassword(e.target.value)} 
                 required 
                 placeholder="••••••••" 
+                autoComplete="new-password"
                 style={{ 
                   width: '100%', 
                   padding: '14px', 
@@ -262,16 +289,22 @@ export default function SignupPage() {
                 color: '#fff', 
                 fontWeight: 600, 
                 fontSize: '16px', 
-                cursor: loading ? 'wait' : 'pointer' 
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
               }}
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#888' }}>
-            Already have an account? <a href="/login" style={{ color: '#22c55e' }}>Sign in</a>
-          </p>
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <p style={{ fontSize: '14px', color: '#888', marginBottom: '12px' }}>
+              Already have an account? <a href="/login" style={{ color: '#22c55e' }}>Sign in</a>
+            </p>
+            <p style={{ fontSize: '14px', color: '#888' }}>
+              Discord member? <a href="/discord-login" style={{ color: '#5865F2' }}>Login with Discord</a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
