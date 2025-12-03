@@ -3,15 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
-
-function getDaysAgo(d) {
-  if (!d) return 'N/A'
-  const today = new Date()
-  const date = new Date(d)
-  if (isNaN(date.getTime())) return 'N/A'
-  const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24))
-  return diff === 0 ? 'Today' : diff === 1 ? '1d ago' : `${diff}d ago`
-}
+import { createBrowserClient } from '@supabase/ssr'
 
 function formatDate(d) {
   if (!d) return 'N/A'
@@ -24,9 +16,8 @@ function PencilIcon({ size = 12 }) {
 }
 
 function Chart({ data, isPositive, accountId }) {
-  const [tooltip, setTooltip] = useState(null)
   if (!data || data.length < 2) return <div style={{ width: '100%', height: '100%', background: '#0a0a0f', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>No data yet</div>
-  
+
   const values = data.map(d => d.value)
   const max = Math.max(...values)
   const min = Math.min(...values)
@@ -59,7 +50,7 @@ function AccountCard({ account, trades, onEditName, supabase }) {
   const [editName, setEditName] = useState(account.name)
 
   const handleSave = async () => {
-    if (editName !== account.name) {
+    if (editName !== account.name && supabase) {
       await supabase.from('accounts').update({ name: editName }).eq('id', account.id)
       onEditName(account.id, editName)
     }
@@ -71,12 +62,12 @@ function AccountCard({ account, trades, onEditName, supabase }) {
   const totalPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0)
   const winrate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0
   const avgRR = trades.length > 0 ? (trades.reduce((s, t) => s + (t.rr || 0), 0) / trades.length).toFixed(1) : '0'
-  const pnlHistory = trades.length > 0 
+  const pnlHistory = trades.length > 0
     ? trades.slice().reverse().reduce((acc, t) => {
-        const prev = acc[acc.length - 1]?.value || 0
-        acc.push({ value: prev + (t.pnl || 0), date: formatDate(t.date) })
-        return acc
-      }, [{ value: 0, date: 'Start' }]) 
+      const prev = acc[acc.length - 1]?.value || 0
+      acc.push({ value: prev + (t.pnl || 0), date: formatDate(t.date) })
+      return acc
+    }, [{ value: 0, date: 'Start' }])
     : [{ value: 0, date: 'Start' }]
 
   return (
@@ -125,7 +116,7 @@ function AccountCard({ account, trades, onEditName, supabase }) {
 }
 
 export default function Dashboard() {
-  const { user, profile, loading, signOut, hasAccess, supabase } = useAuth()
+  const { user, hasAccess, signOut } = useAuth()
   const router = useRouter()
   const [accounts, setAccounts] = useState([])
   const [trades, setTrades] = useState({})
@@ -133,32 +124,36 @@ export default function Dashboard() {
   const [name, setName] = useState('')
   const [balance, setBalance] = useState('')
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [redirecting, setRedirecting] = useState(false)
+  const [supabase, setSupabase] = useState(null)
 
-  // Handle redirects
+  // Create supabase client
   useEffect(() => {
-    if (loading) return // Wait for auth to complete
-    
+    const client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+    setSupabase(client)
+  }, [])
+
+  // Redirect if not logged in or no access
+  useEffect(() => {
     if (!user) {
-      setRedirecting(true)
       router.push('/login')
       return
     }
-    
     if (!hasAccess) {
-      setRedirecting(true)
       router.push('/pricing?signup=true')
-      return
     }
-  }, [user, loading, hasAccess, router])
+  }, [user, hasAccess, router])
 
-  // Load data when user is ready
+  // Load data when supabase and user are ready
   useEffect(() => {
-    if (!user || !supabase || loading || redirecting) return
-    
+    if (!supabase || !user) return
+
     const loadData = async () => {
       try {
-        // Load accounts
+        console.log('Loading accounts for user:', user.id)
+        
         const { data: accountsData, error: accError } = await supabase
           .from('accounts')
           .select('*')
@@ -167,10 +162,9 @@ export default function Dashboard() {
 
         if (accError) {
           console.error('Accounts error:', accError)
-          setDataLoaded(true)
-          return
         }
 
+        console.log('Accounts loaded:', accountsData)
         setAccounts(accountsData || [])
 
         // Load trades for each account
@@ -186,7 +180,7 @@ export default function Dashboard() {
           }
           setTrades(tradesMap)
         }
-        
+
         setDataLoaded(true)
       } catch (err) {
         console.error('Load data error:', err)
@@ -195,14 +189,19 @@ export default function Dashboard() {
     }
 
     loadData()
-  }, [user, supabase, loading, redirecting])
+  }, [supabase, user])
 
   const handleEditName = (accountId, newName) => {
     setAccounts(accounts.map(a => a.id === accountId ? { ...a, name: newName } : a))
   }
 
   const addAccount = async () => {
-    if (!name || !balance || !user) return
+    if (!name || !balance || !user || !supabase) {
+      console.log('Missing data:', { name, balance, user: !!user, supabase: !!supabase })
+      return
+    }
+
+    console.log('Creating account:', { name, balance, userId: user.id })
 
     const { data, error } = await supabase.from('accounts').insert({
       user_id: user.id,
@@ -212,8 +211,11 @@ export default function Dashboard() {
 
     if (error) {
       console.error('Add account error:', error)
+      alert('Error creating account: ' + error.message)
       return
     }
+
+    console.log('Account created:', data)
 
     if (data) {
       setAccounts([...accounts, data])
@@ -224,11 +226,11 @@ export default function Dashboard() {
     setShowModal(false)
   }
 
-  // Show loading while checking auth or redirecting
-  if (loading || redirecting || !user) {
+  // Show loading only briefly
+  if (!user) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#777' }}>
-        Loading...
+        Redirecting...
       </div>
     )
   }
@@ -236,24 +238,19 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 48px' }}>
-        {/* Header */}
+        {/* Header - Title on left, user on right */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
               <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
             </a>
-            <span style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#fff' }}>PRO</span>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '2px', color: '#888', margin: 0 }}>DASHBOARD</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button onClick={() => setShowModal(true)} style={{ padding: '10px 20px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>+ Add Journal</button>
             <span style={{ color: '#aaa', fontSize: '14px' }}>{user?.email}</span>
             <button onClick={signOut} style={{ padding: '8px 16px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#888', fontSize: '13px', cursor: 'pointer' }}>Sign Out</button>
           </div>
-        </div>
-
-        {/* Dashboard Title */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '32px', position: 'relative' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '3px', color: '#fff' }}>DASHBOARD</h1>
-          <button onClick={() => setShowModal(true)} style={{ position: 'absolute', right: 0, padding: '12px 22px', background: '#1a1a24', border: '1px solid #2a2a36', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>+ Add Journal</button>
         </div>
 
         {/* Accounts */}
