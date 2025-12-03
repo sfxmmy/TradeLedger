@@ -1,15 +1,50 @@
 'use client'
 
-import { useAuth } from '@/components/AuthProvider'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 
 function CheckIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
 }
 
 export default function LandingPage() {
-  const { user, hasAccess } = useAuth()
   const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [hasAccess, setHasAccess] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      
+      if (currentUser) {
+        setUser(currentUser)
+        
+        // Check access
+        if (currentUser.email === 'ssiagos@hotmail.com') {
+          setHasAccess(true)
+        } else {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_status')
+            .eq('id', currentUser.id)
+            .single()
+          
+          setHasAccess(profile?.subscription_status === 'active')
+        }
+      }
+      
+      setLoading(false)
+    }
+
+    checkUser()
+  }, [])
 
   const handleSubscribe = () => {
     router.push('/signup?redirect=checkout')
@@ -21,20 +56,29 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      {/* Header - Same across all pages */}
+      {/* Header */}
       <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
         <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
           <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
         </a>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {user && hasAccess ? (
-            <a href="/dashboard" style={{ padding: '12px 24px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-              Dashboard
-            </a>
+          {!loading && user && hasAccess ? (
+            <>
+              <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+                Get Access - £9/mo
+              </a>
+              <a href="/dashboard" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+                Enter Journal
+              </a>
+            </>
           ) : (
             <>
-              <a href="/pricing" style={{ padding: '12px 24px', color: '#aaa', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>Pricing</a>
-              <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>Member Login</a>
+              <a href="/pricing" style={{ padding: '12px 24px', background: '#22c55e', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+                Get Access - £9/mo
+              </a>
+              <a href="/login" style={{ padding: '12px 24px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+                Member Login
+              </a>
             </>
           )}
         </div>
@@ -55,10 +99,10 @@ export default function LandingPage() {
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
             <button onClick={handleSubscribe} style={{ padding: '18px 40px', background: '#22c55e', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '18px', cursor: 'pointer' }}>
-              Purchase Membership: £9/month
+              Get Started - £9/month
             </button>
             <button onClick={scrollToHowItWorks} style={{ padding: '18px 40px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '12px', color: '#fff', fontWeight: 600, fontSize: '18px', cursor: 'pointer' }}>
-              More Info
+              Learn More
             </button>
           </div>
         </div>
@@ -106,7 +150,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Preview */}
+      {/* Pricing */}
       <section style={{ padding: '60px 48px', background: '#0d0d12' }}>
         <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px', color: '#fff' }}>Simple Pricing</h2>

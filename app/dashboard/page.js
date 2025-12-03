@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
@@ -16,32 +15,30 @@ function PencilIcon({ size = 12 }) {
 }
 
 function Chart({ data, isPositive, accountId }) {
-  if (!data || data.length < 2) return <div style={{ width: '100%', height: '100%', background: '#0a0a0f', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>No data yet</div>
+  if (!data || data.length < 2) return <div style={{ width: '100%', height: '100%', background: '#0a0a0f', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>No trades yet</div>
 
   const values = data.map(d => d.value)
   const max = Math.max(...values)
   const min = Math.min(...values)
   const range = max - min || 1
   const width = 700, height = 280, pL = 45, pT = 10, pR = 15, cW = width - pL - pR, cH = height - pT - 35
-  const points = data.map((d, i) => ({ x: pL + (i / (data.length - 1)) * cW, y: pT + (1 - (d.value - min) / range) * cH, value: d.value, date: d.date }))
+  const points = data.map((d, i) => ({ x: pL + (i / (data.length - 1)) * cW, y: pT + (1 - (d.value - min) / range) * cH }))
   let pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
   const fillD = pathD + ` L ${points[points.length - 1].x} ${pT + cH} L ${pL} ${pT + cH} Z`
   const color = isPositive ? '#22c55e' : '#ef4444'
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id={`cg${accountId}${isPositive}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2, 3, 4].map(i => <line key={i} x1={pL} y1={pT + (i / 4) * cH} x2={width - pR} y2={pT + (i / 4) * cH} stroke="#1a1a22" strokeWidth="1" />)}
-        <path d={fillD} fill={`url(#cg${accountId}${isPositive})`} />
-        <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id={`cg${accountId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0, 1, 2, 3, 4].map(i => <line key={i} x1={pL} y1={pT + (i / 4) * cH} x2={width - pR} y2={pT + (i / 4) * cH} stroke="#1a1a22" strokeWidth="1" />)}
+      <path d={fillD} fill={`url(#cg${accountId})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -116,121 +113,130 @@ function AccountCard({ account, trades, onEditName, supabase }) {
 }
 
 export default function Dashboard() {
-  const { user, hasAccess, signOut } = useAuth()
   const router = useRouter()
+  const [user, setUser] = useState(null)
   const [accounts, setAccounts] = useState([])
   const [trades, setTrades] = useState({})
   const [showModal, setShowModal] = useState(false)
   const [name, setName] = useState('')
   const [balance, setBalance] = useState('')
-  const [dataLoaded, setDataLoaded] = useState(false)
-  const [supabase, setSupabase] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ))
 
-  // Create supabase client
+  // Initialize and load data
   useEffect(() => {
-    const client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-    setSupabase(client)
-  }, [])
-
-  // Redirect if not logged in or no access
-  useEffect(() => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    if (!hasAccess) {
-      router.push('/pricing?signup=true')
-    }
-  }, [user, hasAccess, router])
-
-  // Load data when supabase and user are ready
-  useEffect(() => {
-    if (!supabase || !user) return
-
-    const loadData = async () => {
-      try {
-        console.log('Loading accounts for user:', user.id)
-        
-        const { data: accountsData, error: accError } = await supabase
-          .from('accounts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true })
-
-        if (accError) {
-          console.error('Accounts error:', accError)
-        }
-
-        console.log('Accounts loaded:', accountsData)
-        setAccounts(accountsData || [])
-
-        // Load trades for each account
-        if (accountsData?.length) {
-          const tradesMap = {}
-          for (const acc of accountsData) {
-            const { data: tradesData } = await supabase
-              .from('trades')
-              .select('*')
-              .eq('account_id', acc.id)
-              .order('date', { ascending: false })
-            tradesMap[acc.id] = tradesData || []
-          }
-          setTrades(tradesMap)
-        }
-
-        setDataLoaded(true)
-      } catch (err) {
-        console.error('Load data error:', err)
-        setDataLoaded(true)
+    const init = async () => {
+      // Get user
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      
+      if (!currentUser) {
+        router.push('/login')
+        return
       }
+
+      setUser(currentUser)
+
+      // Check if admin or has subscription
+      const isAdmin = currentUser.email === 'ssiagos@hotmail.com'
+      
+      if (!isAdmin) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', currentUser.id)
+          .single()
+
+        if (profile?.subscription_status !== 'active') {
+          router.push('/pricing?signup=true')
+          return
+        }
+      }
+
+      // Load accounts
+      const { data: accountsData, error: accError } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: true })
+
+      if (accError) {
+        console.error('Error loading accounts:', accError)
+      }
+
+      setAccounts(accountsData || [])
+
+      // Load trades
+      if (accountsData?.length) {
+        const tradesMap = {}
+        for (const acc of accountsData) {
+          const { data: tradesData } = await supabase
+            .from('trades')
+            .select('*')
+            .eq('account_id', acc.id)
+            .order('date', { ascending: false })
+          tradesMap[acc.id] = tradesData || []
+        }
+        setTrades(tradesMap)
+      }
+
+      setLoading(false)
     }
 
-    loadData()
-  }, [supabase, user])
+    init()
+  }, [supabase, router])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   const handleEditName = (accountId, newName) => {
     setAccounts(accounts.map(a => a.id === accountId ? { ...a, name: newName } : a))
   }
 
   const addAccount = async () => {
-    if (!name || !balance || !user || !supabase) {
-      console.log('Missing data:', { name, balance, user: !!user, supabase: !!supabase })
+    if (!name.trim() || !balance || !user) {
+      alert('Please fill in all fields')
       return
     }
 
-    console.log('Creating account:', { name, balance, userId: user.id })
+    setCreating(true)
 
-    const { data, error } = await supabase.from('accounts').insert({
-      user_id: user.id,
-      name,
-      starting_balance: parseFloat(balance) || 0,
-    }).select().single()
+    try {
+      const { data, error } = await supabase.from('accounts').insert({
+        user_id: user.id,
+        name: name.trim(),
+        starting_balance: parseFloat(balance) || 0,
+      }).select().single()
 
-    if (error) {
-      console.error('Add account error:', error)
-      alert('Error creating account: ' + error.message)
-      return
-    }
+      if (error) {
+        console.error('Create error:', error)
+        alert('Error creating journal: ' + error.message)
+        setCreating(false)
+        return
+      }
 
-    console.log('Account created:', data)
-
-    if (data) {
       setAccounts([...accounts, data])
       setTrades({ ...trades, [data.id]: [] })
+      setName('')
+      setBalance('')
+      setShowModal(false)
+    } catch (err) {
+      console.error('Error:', err)
+      alert('Error creating journal')
     }
-    setName('')
-    setBalance('')
-    setShowModal(false)
+
+    setCreating(false)
   }
 
-  // Show loading only briefly
-  if (!user) {
+  if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f', color: '#777' }}>
-        Redirecting...
+        Loading...
       </div>
     )
   }
@@ -238,50 +244,72 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 48px' }}>
-        {/* Header - Title on left, user on right */}
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <a href="/" style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '1px', textDecoration: 'none' }}>
               <span style={{ color: '#22c55e' }}>LSD</span><span style={{ color: '#fff' }}>TRADE+</span>
             </a>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '2px', color: '#888', margin: 0 }}>DASHBOARD</h1>
+            <span style={{ fontSize: '20px', fontWeight: 600, letterSpacing: '2px', color: '#555' }}>DASHBOARD</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button onClick={() => setShowModal(true)} style={{ padding: '10px 20px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>+ Add Journal</button>
-            <span style={{ color: '#aaa', fontSize: '14px' }}>{user?.email}</span>
-            <button onClick={signOut} style={{ padding: '8px 16px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#888', fontSize: '13px', cursor: 'pointer' }}>Sign Out</button>
+            <span style={{ color: '#666', fontSize: '14px' }}>{user?.email}</span>
+            <button onClick={handleSignOut} style={{ padding: '10px 16px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '8px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Sign Out</button>
           </div>
         </div>
 
-        {/* Accounts */}
-        {!dataLoaded ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#777' }}>Loading your journals...</div>
-        ) : accounts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px', background: '#14141a', border: '1px solid #222230', borderRadius: '16px' }}>
-            <h2 style={{ fontSize: '24px', marginBottom: '12px', color: '#fff' }}>Welcome to LSDTRADE+!</h2>
-            <p style={{ color: '#888', marginBottom: '24px' }}>Create your first trading journal to get started</p>
-            <button onClick={() => setShowModal(true)} style={{ padding: '14px 28px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>+ Create Journal</button>
+        {/* Content */}
+        {accounts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '100px 40px', background: '#14141a', border: '1px solid #222230', borderRadius: '16px' }}>
+            <h2 style={{ fontSize: '28px', marginBottom: '12px', color: '#fff' }}>Welcome to LSDTRADE+!</h2>
+            <p style={{ color: '#888', marginBottom: '32px', fontSize: '16px' }}>Create your first trading journal to get started</p>
+            <button onClick={() => setShowModal(true)} style={{ padding: '16px 32px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '16px', cursor: 'pointer' }}>+ Create Your First Journal</button>
           </div>
         ) : (
           accounts.map(a => <AccountCard key={a.id} account={a} trades={trades[a.id] || []} onEditName={handleEditName} supabase={supabase} />)
         )}
 
-        {/* Add Account Modal */}
+        {/* Modal */}
         {showModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '14px', padding: '24px', width: '400px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '24px', color: '#fff' }}>Add Journal</h2>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#aaa', marginBottom: '8px', textTransform: 'uppercase' }}>Journal Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. FTMO 10k" style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} />
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowModal(false)}>
+            <div style={{ background: '#14141a', border: '1px solid #222230', borderRadius: '14px', padding: '28px', width: '420px' }} onClick={e => e.stopPropagation()}>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px', color: '#fff' }}>Create New Journal</h2>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Journal Name</label>
+                <input 
+                  type="text" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  placeholder="e.g. FTMO 10k, Funded 25k" 
+                  autoFocus
+                  style={{ width: '100%', padding: '14px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} 
+                />
               </div>
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#aaa', marginBottom: '8px', textTransform: 'uppercase' }}>Starting Balance ($)</label>
-                <input type="number" value={balance} onChange={e => setBalance(e.target.value)} placeholder="e.g. 10000" style={{ width: '100%', padding: '12px 14px', background: '#0a0a0f', border: '1px solid #222230', borderRadius: '10px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' }} />
+              <div style={{ marginBottom: '28px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Starting Balance ($)</label>
+                <input 
+                  type="number" 
+                  value={balance} 
+                  onChange={e => setBalance(e.target.value)} 
+                  placeholder="e.g. 10000" 
+                  style={{ width: '100%', padding: '14px', background: '#0a0a0f', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} 
+                />
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={addAccount} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Create</button>
-                <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: '14px', background: '#1a1a24', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                <button 
+                  onClick={addAccount} 
+                  disabled={creating || !name.trim() || !balance}
+                  style={{ flex: 1, padding: '14px', background: creating || !name.trim() || !balance ? '#1a3a1a' : '#22c55e', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: creating ? 'wait' : 'pointer', opacity: creating || !name.trim() || !balance ? 0.6 : 1 }}
+                >
+                  {creating ? 'Creating...' : 'Create Journal'}
+                </button>
+                <button 
+                  onClick={() => setShowModal(false)} 
+                  style={{ flex: 1, padding: '14px', background: '#1a1a24', border: '1px solid #2a2a35', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
