@@ -53,6 +53,7 @@ export default function AccountPage() {
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
   const [noteText, setNoteText] = useState('')
   const [customNoteTitle, setCustomNoteTitle] = useState('')
+  const [editingStats, setEditingStats] = useState(false)
 
   useEffect(() => { loadData() }, [])
   useEffect(() => {
@@ -273,6 +274,56 @@ export default function AccountPage() {
     )
   }
 
+  function LineChart({ title }) {
+    // Build cumulative PnL data
+    const sortedTrades = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date))
+    let cumPnl = 0
+    const dataPoints = sortedTrades.map((t, i) => {
+      cumPnl += parseFloat(t.pnl) || 0
+      return { x: i, y: cumPnl, date: t.date }
+    })
+    
+    if (dataPoints.length < 2) return (
+      <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px' }}>
+        <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, marginBottom: '12px' }}>{title}</div>
+        <div style={{ padding: '30px', textAlign: 'center', color: '#333', fontSize: '11px' }}>Need more trades for chart</div>
+      </div>
+    )
+    
+    const maxY = Math.max(...dataPoints.map(p => p.y))
+    const minY = Math.min(...dataPoints.map(p => p.y))
+    const yRange = maxY - minY || 100
+    const width = 100, height = 50, padL = 8, padR = 2, padT = 4, padB = 8
+    const chartW = width - padL - padR, chartH = height - padT - padB
+    
+    const points = dataPoints.map((p, i) => ({
+      x: padL + (i / (dataPoints.length - 1)) * chartW,
+      y: padT + chartH - ((p.y - minY) / yRange) * chartH
+    }))
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+    const areaD = pathD + ` L ${points[points.length-1].x} ${padT + chartH} L ${padL} ${padT + chartH} Z`
+    
+    return (
+      <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px' }}>
+        <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, marginBottom: '12px' }}>{title}</div>
+        <svg width="100%" height="120" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={areaD} fill="url(#lineGrad)" />
+          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+          <span style={{ fontSize: '10px', color: '#555' }}>${minY.toFixed(0)}</span>
+          <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>${maxY.toFixed(0)}</span>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ textAlign: 'center' }}><div style={{ fontSize: '24px', marginBottom: '16px' }}><span style={{ color: '#22c55e' }}>LSD</span>TRADE+</div><div style={{ color: '#666' }}>Loading...</div></div></div>
 
   // Stats calculations
@@ -314,10 +365,11 @@ export default function AccountPage() {
 
         {/* Tabs + Buttons Row - All in one line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {['trades', 'statistics', 'notes'].map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '10px 32px', background: activeTab === tab ? '#22c55e' : 'transparent', border: activeTab === tab ? 'none' : '1px solid #1a1a22', borderRadius: '6px', color: activeTab === tab ? '#fff' : '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer', textTransform: 'capitalize' }}>{tab}</button>
             ))}
+            <span style={{ fontSize: '11px', color: '#555', marginLeft: '12px' }}>{trades.length} Trades</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             {activeTab === 'trades' && (
@@ -330,9 +382,6 @@ export default function AccountPage() {
         {/* TRADES TAB */}
         {activeTab === 'trades' && (
           <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#888' }}>{trades.length} Trades</span>
-            </div>
             {trades.length === 0 ? (
               <div style={{ padding: '50px', textAlign: 'center', color: '#333', fontSize: '12px' }}>No trades yet. Click "LOG NEW TRADE" to add your first trade.</div>
             ) : (
@@ -466,24 +515,54 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Custom Charts Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-              <span style={{ fontSize: '12px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Custom Charts</span>
-              <button onClick={() => setShowAddChart(true)} style={{ padding: '8px 14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>+ Add Chart</button>
+            {/* Line Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+              <LineChart title="Cumulative PnL Over Time" />
+              <BarChart 
+                data={getChartData('symbol', 'pnl')} 
+                showPercent={false} 
+                title="PnL by Symbol"
+              />
             </div>
 
-            {/* Charts Grid */}
+            {/* More Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-              {customCharts.map(chart => (
-                <BarChart 
-                  key={chart.id}
-                  data={getChartData(chart.xAxis, chart.yAxis)} 
-                  showPercent={chart.yAxis === 'winrate'} 
-                  title={chart.title}
-                  onRemove={() => removeChart(chart.id)}
-                />
-              ))}
+              <BarChart 
+                data={getChartData('session', 'winrate')} 
+                showPercent={true} 
+                title="Winrate by Session"
+              />
+              <BarChart 
+                data={getChartData('confidence', 'winrate')} 
+                showPercent={true} 
+                title="Winrate by Confidence"
+              />
             </div>
+
+            {/* Edit Stats Button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button onClick={() => setEditingStats(!editingStats)} style={{ padding: '8px 14px', background: editingStats ? '#ef4444' : 'transparent', border: editingStats ? 'none' : '1px solid #1a1a22', borderRadius: '5px', color: editingStats ? '#fff' : '#666', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                {editingStats ? 'Done Editing' : 'Edit Stats'}
+              </button>
+              {editingStats && (
+                <button onClick={() => setShowAddChart(true)} style={{ padding: '8px 14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', marginLeft: '10px' }}>+ Add New Statistic</button>
+              )}
+            </div>
+
+            {/* Custom Charts (only show in edit mode) */}
+            {editingStats && customCharts.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                {customCharts.map(chart => (
+                  <BarChart 
+                    key={chart.id}
+                    data={getChartData(chart.xAxis, chart.yAxis)} 
+                    showPercent={chart.yAxis === 'winrate'} 
+                    title={chart.title}
+                    onRemove={() => removeChart(chart.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

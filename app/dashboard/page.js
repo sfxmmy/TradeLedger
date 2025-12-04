@@ -98,18 +98,17 @@ export default function DashboardPage() {
     const yMin = Math.floor(minBal / 1000) * 1000
     const yRange = yMax - yMin || 1000
 
-    // Y-axis labels - every $1000
     const yLabels = []
     for (let v = yMin; v <= yMax; v += 1000) {
       yLabels.push(v)
     }
 
-    const width = 600
-    const height = 240
-    const paddingLeft = 38
-    const paddingRight = 6
-    const paddingTop = 10
-    const paddingBottom = 24
+    const width = 100
+    const height = 100
+    const paddingLeft = 7
+    const paddingRight = 1
+    const paddingTop = 2
+    const paddingBottom = 5
     const chartWidth = width - paddingLeft - paddingRight
     const chartHeight = height - paddingTop - paddingBottom
 
@@ -122,84 +121,55 @@ export default function DashboardPage() {
     const pathD = chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
     const areaD = pathD + ` L ${chartPoints[chartPoints.length-1].x} ${paddingTop + chartHeight} L ${paddingLeft} ${paddingTop + chartHeight} Z`
 
-    // X-axis: 5th of each month
-    const datesWithTrades = points.filter(p => p.date).map(p => new Date(p.date))
+    // X-axis: 5 evenly spaced dates
+    const datesWithTrades = points.filter(p => p.date).map((p, idx) => ({ date: p.date, pointIdx: idx + 1 }))
     const xLabels = []
     if (datesWithTrades.length > 0) {
-      const firstDate = datesWithTrades[0]
-      const lastDate = datesWithTrades[datesWithTrades.length - 1]
-      let currentMonth = new Date(firstDate.getFullYear(), firstDate.getMonth(), 5)
-      
-      while (currentMonth <= lastDate) {
-        // Find position for this date in the chart
-        const daysSinceStart = (currentMonth - firstDate) / (1000 * 60 * 60 * 24)
-        const totalDays = (lastDate - firstDate) / (1000 * 60 * 60 * 24)
-        if (totalDays > 0 && daysSinceStart >= 0) {
-          const xPos = paddingLeft + (daysSinceStart / totalDays) * chartWidth
-          if (xPos >= paddingLeft && xPos <= width - paddingRight) {
-            xLabels.push({
-              label: `${currentMonth.getDate()}/${currentMonth.getMonth() + 1}`,
-              x: xPos
-            })
-          }
-        }
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 5)
-      }
-      
-      // If no 5th dates found, show evenly spaced dates
-      if (xLabels.length === 0) {
-        for (let i = 0; i < 5; i++) {
-          const idx = Math.floor(i * (datesWithTrades.length - 1) / 4)
-          const date = datesWithTrades[idx]
-          xLabels.push({
-            label: `${date.getDate()}/${date.getMonth() + 1}`,
-            x: paddingLeft + ((idx + 1) / points.length) * chartWidth
-          })
-        }
+      const numLabels = Math.min(5, datesWithTrades.length)
+      for (let i = 0; i < numLabels; i++) {
+        const dataIdx = Math.floor(i * (datesWithTrades.length - 1) / Math.max(1, numLabels - 1))
+        const item = datesWithTrades[dataIdx]
+        const date = new Date(item.date)
+        const xPos = paddingLeft + (item.pointIdx / (points.length - 1)) * chartWidth
+        xLabels.push({ label: `${date.getDate()}/${date.getMonth() + 1}`, x: xPos })
       }
     }
 
     function handleMouseMove(e) {
       if (!svgRef.current) return
       const rect = svgRef.current.getBoundingClientRect()
-      const mouseX = (e.clientX - rect.left) * (width / rect.width)
+      const mouseX = (e.clientX - rect.left) / rect.width * width
       let closest = chartPoints[0], minDist = Math.abs(mouseX - chartPoints[0].x)
       chartPoints.forEach(p => { const d = Math.abs(mouseX - p.x); if (d < minDist) { minDist = d; closest = p } })
-      setTooltip(minDist < 25 ? closest : null)
+      setTooltip(minDist < 4 ? closest : null)
     }
 
     return (
-      <div style={{ position: 'relative', height: '100%' }}>
-        <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
           <defs>
             <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
               <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* Y-axis line */}
-          <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="#1a1a22" strokeWidth="1" />
-          {/* X-axis line */}
-          <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={width - paddingRight} y2={paddingTop + chartHeight} stroke="#1a1a22" strokeWidth="1" />
           <path d={areaD} fill="url(#areaGrad)" />
-          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Y labels - normal font */}
+          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="0.4" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          {/* Y labels */}
           {yLabels.map((v, i) => {
             const y = paddingTop + chartHeight - ((v - yMin) / yRange) * chartHeight
-            return <text key={i} x={paddingLeft - 5} y={y + 4} fill="#555" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="end">${(v/1000).toFixed(0)}k</text>
+            return <text key={i} x={paddingLeft - 0.8} y={y + 0.6} fill="#444" fontSize="1.6" fontFamily="system-ui" textAnchor="end">${(v/1000).toFixed(0)}k</text>
           })}
-          {/* X labels */}
-          {xLabels.map((l, i) => <text key={i} x={l.x} y={height - 6} fill="#555" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="middle">{l.label}</text>)}
+          {/* X labels - 5 evenly spaced */}
+          {xLabels.map((l, i) => <text key={i} x={l.x} y={height - 1} fill="#444" fontSize="1.6" fontFamily="system-ui" textAnchor="middle">{l.label}</text>)}
           {tooltip && (
             <>
-              <line x1={tooltip.x} y1={paddingTop} x2={tooltip.x} y2={paddingTop + chartHeight} stroke="#22c55e" strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
-              <circle cx={tooltip.x} cy={tooltip.y} r="5" fill="#22c55e" />
-              <circle cx={tooltip.x} cy={tooltip.y} r="2.5" fill="#0a0a0f" />
+              <circle cx={tooltip.x} cy={tooltip.y} r="0.8" fill="#22c55e" />
             </>
           )}
         </svg>
         {tooltip && (
-          <div style={{ position: 'absolute', left: `${(tooltip.x / width) * 100}%`, top: '10px', transform: 'translateX(-50%)', background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '10px', whiteSpace: 'nowrap', zIndex: 10 }}>
+          <div style={{ position: 'absolute', left: `${(tooltip.x / width) * 100}%`, top: '8px', transform: 'translateX(-50%)', background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '10px', whiteSpace: 'nowrap', zIndex: 10 }}>
             <div style={{ color: '#666' }}>{tooltip.date ? `${new Date(tooltip.date).getDate()}/${new Date(tooltip.date).getMonth()+1}` : 'Start'}</div>
             <div style={{ fontWeight: 600, fontSize: '14px' }}>${tooltip.balance.toLocaleString()}</div>
             {tooltip.symbol && <div style={{ color: tooltip.pnl >= 0 ? '#22c55e' : '#ef4444' }}>{tooltip.symbol}: {tooltip.pnl >= 0 ? '+' : ''}${tooltip.pnl.toFixed(0)}</div>}
@@ -219,7 +189,7 @@ export default function DashboardPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '24px 32px' }}>
-        {/* Header - Back button left, DASHBOARD center, buttons right */}
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <a href="/" style={{ color: '#555', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '18px' }}>←</span> Back
@@ -255,6 +225,8 @@ export default function DashboardPage() {
               const consistency = Object.keys(tradeDays).length > 0 ? Math.round((Object.values(tradeDays).filter(v => v > 0).length / Object.keys(tradeDays).length) * 100) : 0
               const recentTrades = [...accTrades].reverse()
 
+              const statsHeight = 290
+
               return (
                 <div key={account.id} style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px', overflow: 'hidden' }}>
                   {/* Header */}
@@ -273,15 +245,15 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Chart + Stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', padding: '12px 16px', gap: '16px' }}>
-                    {/* Chart */}
-                    <div style={{ height: '260px', background: '#0a0a0e', borderRadius: '6px', padding: '6px' }}>
+                  {/* Chart + Stats - aligned heights */}
+                  <div style={{ display: 'flex', padding: '12px 16px', gap: '16px' }}>
+                    {/* Chart with border */}
+                    <div style={{ flex: 1, height: statsHeight, background: '#0a0a0e', borderRadius: '8px', border: '1px solid #1a1a22', padding: '8px' }}>
                       <EquityCurve accountTrades={accTrades} startingBalance={account.starting_balance} />
                     </div>
 
-                    {/* Stats - 6 larger items */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {/* Stats - same height as chart */}
+                    <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '6px', height: statsHeight }}>
                       {[
                         { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
                         { label: 'Winrate', value: `${winrate}%`, color: '#fff' },
@@ -298,59 +270,63 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Recent Trades */}
+                  {/* Recent Trades with bordered header */}
                   <div style={{ padding: '0 16px 12px' }}>
-                    <div style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Trades</span>
+                    {/* Header row with border */}
+                    <div style={{ background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '8px 8px 0 0', marginTop: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1a1a22' }}>
+                        <span style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Trades</span>
+                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            {['Symbol', 'W/L', 'PnL', 'RR', '%', 'Emotion', 'Rating', 'Image', 'Placed', 'Date'].map((h, i) => (
+                              <th key={i} style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', background: '#0d0d12' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                      </table>
                     </div>
+                    {/* Scrollable body below header */}
                     {recentTrades.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#333', fontSize: '12px', background: '#0a0a0e', borderRadius: '8px' }}>No trades yet</div>
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#333', fontSize: '12px', background: '#0a0a0e', borderRadius: '0 0 8px 8px', border: '1px solid #1a1a22', borderTop: 'none' }}>No trades yet</div>
                     ) : (
-                      <div style={{ background: '#0a0a0e', borderRadius: '8px', overflow: 'hidden' }}>
-                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead style={{ position: 'sticky', top: 0, background: '#0d0d12', zIndex: 5 }}>
-                              <tr>
-                                {['Symbol', 'W/L', 'PnL', 'RR', '%', 'Emotion', 'Rating', 'Image', 'Placed', 'Date'].map((h, i) => (
-                                  <th key={i} style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22' }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {recentTrades.map((trade, idx) => {
-                                const extra = getExtraData(trade)
-                                return (
-                                  <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
-                                    <td style={{ padding: '12px', fontWeight: 600, fontSize: '13px', textAlign: 'center' }}>{trade.symbol}</td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
-                                        {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
-                                      </span>
-                                    </td>
-                                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444' }}>{parseFloat(trade.pnl) >= 0 ? '+' : ''}${parseFloat(trade.pnl || 0).toFixed(0)}</td>
-                                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#888' }}>{trade.rr || '-'}</td>
-                                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#888' }}>{extra.riskPercent || '1'}%</td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      {extra.confidence ? (
-                                        <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '11px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#888' }}>{extra.confidence}</span>
-                                      ) : <span style={{ fontSize: '13px', color: '#444' }}>-</span>}
-                                    </td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '11px' }}>★</span>)}</div>
-                                    </td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <div style={{ width: '22px', height: '22px', background: trade.image_url ? '#1a1a22' : '#141418', borderRadius: '4px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={trade.image_url ? '#22c55e' : '#333'} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                                      </div>
-                                    </td>
-                                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#666' }}>{getDaysAgo(trade.date)}</td>
-                                    <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#666' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
-                                  </tr>
-                                )
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
+                      <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#0a0a0e', borderRadius: '0 0 8px 8px', border: '1px solid #1a1a22', borderTop: 'none' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <tbody>
+                            {recentTrades.map((trade, idx) => {
+                              const extra = getExtraData(trade)
+                              return (
+                                <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
+                                  <td style={{ padding: '12px', fontWeight: 600, fontSize: '13px', textAlign: 'center', width: '10%' }}>{trade.symbol}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center', width: '10%' }}>
+                                    <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
+                                      {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444', width: '10%' }}>{parseFloat(trade.pnl) >= 0 ? '+' : ''}${parseFloat(trade.pnl || 0).toFixed(0)}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#888', width: '10%' }}>{trade.rr || '-'}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#888', width: '10%' }}>{extra.riskPercent || '1'}%</td>
+                                  <td style={{ padding: '12px', textAlign: 'center', width: '10%' }}>
+                                    {extra.confidence ? (
+                                      <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '11px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#888' }}>{extra.confidence}</span>
+                                    ) : <span style={{ fontSize: '13px', color: '#444' }}>-</span>}
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center', width: '10%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '11px' }}>★</span>)}</div>
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center', width: '10%' }}>
+                                    <div style={{ width: '22px', height: '22px', background: trade.image_url ? '#1a1a22' : '#141418', borderRadius: '4px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={trade.image_url ? '#22c55e' : '#333'} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#666', width: '10%' }}>{getDaysAgo(trade.date)}</td>
+                                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px', color: '#666', width: '10%' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
