@@ -293,7 +293,7 @@ export default function AccountPage() {
     const maxY = Math.max(...dataPoints.map(p => p.y))
     const minY = Math.min(...dataPoints.map(p => p.y))
     const yRange = maxY - minY || 100
-    const width = 100, height = 50, padL = 8, padR = 2, padT = 4, padB = 8
+    const width = 500, height = 180, padL = 50, padR = 10, padT = 10, padB = 30
     const chartW = width - padL - padR, chartH = height - padT - padB
     
     const points = dataPoints.map((p, i) => ({
@@ -303,10 +303,26 @@ export default function AccountPage() {
     const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
     const areaD = pathD + ` L ${points[points.length-1].x} ${padT + chartH} L ${padL} ${padT + chartH} Z`
     
+    // Y labels
+    const yLabels = []
+    const yStep = yRange / 4
+    for (let i = 0; i <= 4; i++) {
+      yLabels.push(Math.round(minY + yStep * i))
+    }
+    
+    // X labels - 5 evenly spaced
+    const xLabels = []
+    const numXLabels = Math.min(5, dataPoints.length)
+    for (let i = 0; i < numXLabels; i++) {
+      const idx = Math.floor(i * (dataPoints.length - 1) / Math.max(1, numXLabels - 1))
+      const d = new Date(dataPoints[idx].date)
+      xLabels.push({ label: `${d.getDate()}/${d.getMonth()+1}`, x: padL + (idx / (dataPoints.length - 1)) * chartW })
+    }
+    
     return (
       <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px' }}>
         <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, marginBottom: '12px' }}>{title}</div>
-        <svg width="100%" height="120" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <svg width="100%" height="180" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
@@ -314,12 +330,15 @@ export default function AccountPage() {
             </linearGradient>
           </defs>
           <path d={areaD} fill="url(#lineGrad)" />
-          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Y labels */}
+          {yLabels.map((v, i) => {
+            const y = padT + chartH - ((v - minY) / yRange) * chartH
+            return <text key={i} x={padL - 8} y={y + 4} fill="#555" fontSize="11" fontFamily="Arial, sans-serif" textAnchor="end">${v}</text>
+          })}
+          {/* X labels */}
+          {xLabels.map((l, i) => <text key={i} x={l.x} y={height - 8} fill="#555" fontSize="11" fontFamily="Arial, sans-serif" textAnchor="middle">{l.label}</text>)}
         </svg>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-          <span style={{ fontSize: '10px', color: '#555' }}>${minY.toFixed(0)}</span>
-          <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>${maxY.toFixed(0)}</span>
-        </div>
       </div>
     )
   }
@@ -356,7 +375,9 @@ export default function AccountPage() {
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '18px 28px' }}>
         {/* Header with account info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-          <a href="/dashboard" style={{ color: '#555', fontSize: '16px', textDecoration: 'none' }}>←</a>
+          <a href="/dashboard" style={{ color: '#555', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '18px' }}>←</span> Back
+          </a>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '9px', color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Journal</div>
             <div style={{ fontSize: '16px', fontWeight: 600 }}>{account?.name}</div>

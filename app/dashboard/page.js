@@ -103,12 +103,12 @@ export default function DashboardPage() {
       yLabels.push(v)
     }
 
-    const width = 100
-    const height = 100
-    const paddingLeft = 7
-    const paddingRight = 1
-    const paddingTop = 2
-    const paddingBottom = 5
+    const width = 600
+    const height = 260
+    const paddingLeft = 45
+    const paddingRight = 10
+    const paddingTop = 10
+    const paddingBottom = 25
     const chartWidth = width - paddingLeft - paddingRight
     const chartHeight = height - paddingTop - paddingBottom
 
@@ -141,12 +141,12 @@ export default function DashboardPage() {
       const mouseX = (e.clientX - rect.left) / rect.width * width
       let closest = chartPoints[0], minDist = Math.abs(mouseX - chartPoints[0].x)
       chartPoints.forEach(p => { const d = Math.abs(mouseX - p.x); if (d < minDist) { minDist = d; closest = p } })
-      setTooltip(minDist < 4 ? closest : null)
+      setTooltip(minDist < 20 ? closest : null)
     }
 
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
+        <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }} onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
           <defs>
             <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
@@ -154,19 +154,15 @@ export default function DashboardPage() {
             </linearGradient>
           </defs>
           <path d={areaD} fill="url(#areaGrad)" />
-          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="0.4" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           {/* Y labels */}
           {yLabels.map((v, i) => {
             const y = paddingTop + chartHeight - ((v - yMin) / yRange) * chartHeight
-            return <text key={i} x={paddingLeft - 0.8} y={y + 0.6} fill="#444" fontSize="1.6" fontFamily="system-ui" textAnchor="end">${(v/1000).toFixed(0)}k</text>
+            return <text key={i} x={paddingLeft - 8} y={y + 4} fill="#555" fontSize="11" fontFamily="Arial, sans-serif" textAnchor="end">${(v/1000).toFixed(0)}k</text>
           })}
-          {/* X labels - 5 evenly spaced */}
-          {xLabels.map((l, i) => <text key={i} x={l.x} y={height - 1} fill="#444" fontSize="1.6" fontFamily="system-ui" textAnchor="middle">{l.label}</text>)}
-          {tooltip && (
-            <>
-              <circle cx={tooltip.x} cy={tooltip.y} r="0.8" fill="#22c55e" />
-            </>
-          )}
+          {/* X labels */}
+          {xLabels.map((l, i) => <text key={i} x={l.x} y={height - 6} fill="#555" fontSize="11" fontFamily="Arial, sans-serif" textAnchor="middle">{l.label}</text>)}
+          {tooltip && <circle cx={tooltip.x} cy={tooltip.y} r="5" fill="#22c55e" />}
         </svg>
         {tooltip && (
           <div style={{ position: 'absolute', left: `${(tooltip.x / width) * 100}%`, top: '8px', transform: 'translateX(-50%)', background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '10px', whiteSpace: 'nowrap', zIndex: 10 }}>
@@ -225,8 +221,6 @@ export default function DashboardPage() {
               const consistency = Object.keys(tradeDays).length > 0 ? Math.round((Object.values(tradeDays).filter(v => v > 0).length / Object.keys(tradeDays).length) * 100) : 0
               const recentTrades = [...accTrades].reverse()
 
-              const statsHeight = 290
-
               return (
                 <div key={account.id} style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px', overflow: 'hidden' }}>
                   {/* Header */}
@@ -246,14 +240,14 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Chart + Stats - aligned heights */}
-                  <div style={{ display: 'flex', padding: '12px 16px', gap: '16px' }}>
+                  <div style={{ display: 'flex', padding: '12px 16px', gap: '16px', alignItems: 'stretch' }}>
                     {/* Chart with border */}
-                    <div style={{ flex: 1, height: statsHeight, background: '#0a0a0e', borderRadius: '8px', border: '1px solid #1a1a22', padding: '8px' }}>
+                    <div style={{ flex: 1, background: '#0a0a0e', borderRadius: '8px', border: '1px solid #1a1a22', padding: '8px', display: 'flex', alignItems: 'center' }}>
                       <EquityCurve accountTrades={accTrades} startingBalance={account.starting_balance} />
                     </div>
 
-                    {/* Stats - same height as chart */}
-                    <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '6px', height: statsHeight }}>
+                    {/* Stats - same height as chart via flexbox */}
+                    <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {[
                         { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
                         { label: 'Winrate', value: `${winrate}%`, color: '#fff' },
