@@ -372,18 +372,17 @@ export default function AccountPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '18px 28px' }}>
-        {/* Header with account info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-          <a href="/dashboard" style={{ color: '#555', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '18px' }}>←</span> Back
-          </a>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '9px', color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Journal</div>
-            <div style={{ fontSize: '16px', fontWeight: 600 }}>{account?.name}</div>
-          </div>
-        </div>
+      {/* Header - matches homepage style */}
+      <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
+        <a href="/" style={{ fontSize: '22px', fontWeight: 700, textDecoration: 'none' }}>
+          <span style={{ color: '#22c55e' }}>LSD</span>
+          <span style={{ color: '#fff' }}>TRADE+</span>
+        </a>
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '16px', fontWeight: 600, color: '#fff' }}>{account?.name}</div>
+        <a href="/dashboard" style={{ padding: '10px 20px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#888', fontSize: '12px', textDecoration: 'none' }}>← Dashboard</a>
+      </header>
 
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '18px 28px' }}>
         {/* Tabs + Buttons Row - All in one line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

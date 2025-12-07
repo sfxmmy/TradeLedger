@@ -153,6 +153,10 @@ export default function DashboardPage() {
               <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
             </linearGradient>
           </defs>
+          {/* Y-axis line */}
+          <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="#1a1a22" strokeWidth="1" />
+          {/* X-axis line */}
+          <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="#1a1a22" strokeWidth="1" />
           <path d={areaD} fill="url(#areaGrad)" />
           <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           {/* Y labels */}
@@ -184,18 +188,20 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '24px 32px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <a href="/" style={{ color: '#555', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '18px' }}>←</span> Back
-          </a>
-          <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '3px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>DASHBOARD</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setShowModal(true)} style={{ padding: '10px 20px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#888', fontSize: '12px', cursor: 'pointer' }}>+ Add Account</button>
-            <button onClick={handleSignOut} style={{ padding: '10px 16px', background: 'transparent', border: 'none', color: '#444', fontSize: '12px', cursor: 'pointer' }}>Sign Out</button>
-          </div>
+      {/* Header - matches homepage style */}
+      <header style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
+        <a href="/" style={{ fontSize: '22px', fontWeight: 700, textDecoration: 'none' }}>
+          <span style={{ color: '#22c55e' }}>LSD</span>
+          <span style={{ color: '#fff' }}>TRADE+</span>
+        </a>
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', fontWeight: 600, letterSpacing: '2px', color: '#fff' }}>DASHBOARD</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => setShowModal(true)} style={{ padding: '10px 20px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#888', fontSize: '12px', cursor: 'pointer' }}>+ Add Account</button>
+          <button onClick={handleSignOut} style={{ padding: '10px 16px', background: 'transparent', border: 'none', color: '#666', fontSize: '12px', cursor: 'pointer' }}>Sign Out</button>
         </div>
+      </header>
+
+      <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '20px 32px' }}>
 
         {accounts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 40px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px' }}>
@@ -239,15 +245,15 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Chart + Stats - aligned heights */}
-                  <div style={{ display: 'flex', padding: '12px 16px', gap: '16px', alignItems: 'stretch' }}>
-                    {/* Chart with border */}
-                    <div style={{ flex: 1, background: '#0a0a0e', borderRadius: '8px', border: '1px solid #1a1a22', padding: '8px', display: 'flex', alignItems: 'center' }}>
+                  {/* Chart + Stats - narrower */}
+                  <div style={{ display: 'flex', padding: '8px 16px', gap: '12px', alignItems: 'stretch' }}>
+                    {/* Chart - no extra border, just the graph */}
+                    <div style={{ flex: 1, height: '220px' }}>
                       <EquityCurve accountTrades={accTrades} startingBalance={account.starting_balance} />
                     </div>
 
-                    {/* Stats - same height as chart via flexbox */}
-                    <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {/* Stats - narrower */}
+                    <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {[
                         { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
                         { label: 'Winrate', value: `${winrate}%`, color: '#fff' },
@@ -256,37 +262,31 @@ export default function DashboardPage() {
                         { label: 'Number of Trades', value: accTrades.length, color: '#fff' },
                         { label: 'Consistency', value: `${consistency}%`, color: '#fff' },
                       ].map((stat, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', flex: 1 }}>
-                          <span style={{ fontSize: '11px', color: '#555' }}>{stat.label}</span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: stat.color }}>{stat.value}</span>
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#0d0d12', borderRadius: '4px', border: '1px solid #1a1a22', flex: 1 }}>
+                          <span style={{ fontSize: '10px', color: '#555' }}>{stat.label}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: stat.color }}>{stat.value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Recent Trades with bordered header */}
+                  {/* Recent Trades - clean header */}
                   <div style={{ padding: '0 16px 12px' }}>
-                    {/* Header row with border */}
-                    <div style={{ background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '8px 8px 0 0', marginTop: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1a1a22' }}>
-                        <span style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Trades</span>
-                      </div>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            {['Symbol', 'W/L', 'PnL', 'RR', '%', 'Emotion', 'Rating', 'Image', 'Placed', 'Date'].map((h, i) => (
-                              <th key={i} style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', background: '#0d0d12' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                      </table>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0 8px', borderBottom: '1px solid #1a1a22' }}>
+                      <span style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Trades</span>
                     </div>
-                    {/* Scrollable body below header */}
                     {recentTrades.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#333', fontSize: '12px', background: '#0a0a0e', borderRadius: '0 0 8px 8px', border: '1px solid #1a1a22', borderTop: 'none' }}>No trades yet</div>
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#333', fontSize: '12px' }}>No trades yet</div>
                     ) : (
-                      <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#0a0a0e', borderRadius: '0 0 8px 8px', border: '1px solid #1a1a22', borderTop: 'none' }}>
+                      <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead style={{ position: 'sticky', top: 0, background: '#0d0d12' }}>
+                            <tr>
+                              {['Symbol', 'W/L', 'PnL', 'RR', '%', 'Emotion', 'Rating', 'Image', 'Placed', 'Date'].map((h, i) => (
+                                <th key={i} style={{ padding: '8px 10px', textAlign: 'center', color: '#555', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
                           <tbody>
                             {recentTrades.map((trade, idx) => {
                               const extra = getExtraData(trade)

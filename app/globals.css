@@ -47,3 +47,23 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  header {
+    padding: 16px 20px !important;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  header > div:first-child {
+    position: static !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  header {
+    padding: 12px 16px !important;
+  }
+}
