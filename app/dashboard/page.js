@@ -263,8 +263,8 @@ export default function DashboardPage() {
 
                   {/* Chart + Stats Row */}
                   <div style={{ display: 'flex', padding: '0 24px 16px', gap: '16px' }}>
-                    {/* Chart - taller height, overflow hidden to clip x-labels */}
-                    <div style={{ flex: 1, height: '280px', overflow: 'hidden' }}>
+                    {/* Chart - height matches stats panel */}
+                    <div style={{ flex: 1, height: '340px', overflow: 'hidden' }}>
                       <EquityCurve accountTrades={accTrades} startingBalance={account.starting_balance} />
                     </div>
 
