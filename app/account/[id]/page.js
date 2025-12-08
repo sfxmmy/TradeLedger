@@ -555,82 +555,86 @@ export default function AccountPage() {
 
             {/* TRADES TAB */}
             {activeTab === 'trades' && (
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', overflow: 'hidden' }}>
-                {trades.length === 0 ? (
-                  <div style={{ padding: '50px', textAlign: 'center', color: '#666', fontSize: '14px' }}>No trades yet. Click "LOG NEW TRADE" to add your first trade.</div>
-                ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead style={{ position: 'sticky', top: 0, background: '#0a0a0e', zIndex: 5 }}>
-                        <tr>
-                          {['Symbol', 'W/L', 'PnL', '%', 'RR', 'Trend', 'Confidence', 'Rating', 'Image', 'Notes', 'Placed', 'Date', ''].map((h, i) => (
-                            <th key={i} style={{ padding: '12px 14px', textAlign: 'center', color: '#888', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {trades.map((trade, idx) => {
-                          const extra = getExtraData(trade)
-                          return (
-                        <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
-                          <td style={{ padding: '14px', fontWeight: 600, fontSize: '13px', textAlign: 'center' }}>{trade.symbol}</td>
-                          <td style={{ padding: '14px', textAlign: 'center' }}>
-                            <span style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
-                              {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444' }}>{parseFloat(trade.pnl) >= 0 ? '+' : ''}${parseFloat(trade.pnl || 0).toFixed(0)}</td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: '#666' }}>{extra.riskPercent || '1'}%</td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: '#888' }}>{trade.rr || '-'}</td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: trade.direction === 'long' ? '#22c55e' : '#ef4444' }}>{trade.direction?.toUpperCase() || '-'}</td>
-                          <td style={{ padding: '14px', textAlign: 'center' }}>
-                            {extra.confidence && <span style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '11px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#888' }}>{extra.confidence}</span>}
-                          </td>
-                          <td style={{ padding: '14px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
-                              {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '16px' }}>★</span>)}
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px', textAlign: 'center' }}>
-                            {trade.image_url ? (
-                              <button onClick={() => setShowExpandedImage(trade.image_url)} style={{ width: '28px', height: '28px', background: '#1a1a22', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                              </button>
-                            ) : <div style={{ width: '28px', height: '28px', background: '#141418', borderRadius: '4px', margin: '0 auto' }} />}
-                          </td>
-                          <td style={{ padding: '14px', maxWidth: '180px' }}>
-                            {trade.notes ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{trade.notes}</span>
-                                <button onClick={() => setShowExpandedNote(trade.notes)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px' }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                                </button>
-                              </div>
-                            ) : <span style={{ fontSize: '12px', color: '#333' }}>-</span>}
-                          </td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontSize: '12px', color: '#666' }}>{getDaysAgo(trade.date)}</td>
-                          <td style={{ padding: '14px', textAlign: 'center', fontSize: '12px', color: '#666' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
-                          <td style={{ padding: '14px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '16px' }}>×</button></td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', overflow: 'hidden' }}>
+                  {trades.length === 0 ? (
+                    <div style={{ padding: '50px', textAlign: 'center', color: '#666', fontSize: '14px' }}>No trades yet. Click "LOG NEW TRADE" to add your first trade.</div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead style={{ position: 'sticky', top: 0, background: '#0a0a0e', zIndex: 5 }}>
+                          <tr>
+                            {['Symbol', 'W/L', 'PnL', '%', 'RR', 'Trend', 'Confidence', 'Rating', 'Image', 'Notes', 'Placed', 'Date', ''].map((h, i) => (
+                              <th key={i} style={{ padding: '12px 14px', textAlign: 'center', color: '#888', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {trades.map((trade) => {
+                            const extra = getExtraData(trade)
+                            const pnlValue = parseFloat(trade.pnl) || 0
+                            return (
+                              <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
+                                <td style={{ padding: '14px', fontWeight: 600, fontSize: '13px', textAlign: 'center' }}>{trade.symbol}</td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  <span style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
+                                    {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: pnlValue >= 0 ? '#22c55e' : '#ef4444' }}>
+                                  {pnlValue >= 0 ? '+' : ''}${pnlValue.toFixed(0)}
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: '#666' }}>{extra.riskPercent || '1'}%</td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: '#888' }}>{trade.rr || '-'}</td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontSize: '13px', color: trade.direction === 'long' ? '#22c55e' : '#ef4444' }}>{trade.direction?.toUpperCase() || '-'}</td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  {extra.confidence && <span style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '11px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#888' }}>{extra.confidence}</span>}
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
+                                    {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '16px' }}>★</span>)}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}>
+                                  {trade.image_url ? (
+                                    <button onClick={() => setShowExpandedImage(trade.image_url)} style={{ width: '28px', height: '28px', background: '#1a1a22', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                                    </button>
+                                  ) : <div style={{ width: '28px', height: '28px', background: '#141418', borderRadius: '4px', margin: '0 auto' }} />}
+                                </td>
+                                <td style={{ padding: '14px', maxWidth: '180px' }}>
+                                  {trade.notes ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{trade.notes}</span>
+                                      <button onClick={() => setShowExpandedNote(trade.notes)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px' }}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                                      </button>
+                                    </div>
+                                  ) : <span style={{ fontSize: '12px', color: '#333' }}>-</span>}
+                                </td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontSize: '12px', color: '#666' }}>{getDaysAgo(trade.date)}</td>
+                                <td style={{ padding: '14px', textAlign: 'center', fontSize: '12px', color: '#666' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
+                                <td style={{ padding: '14px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '16px' }}>×</button></td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Small PnL Graph below trades */}
+                {trades.length > 1 && (
+                  <div style={{ marginTop: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
+                    <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Equity Curve</div>
+                    <div style={{ height: '120px' }}>
+                      <MiniEquityCurve />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </div>
-          
-          {/* Small PnL Graph below trades */}
-          {trades.length > 1 && (
-            <div style={{ marginTop: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-              <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Equity Curve</div>
-              <div style={{ height: '120px' }}>
-                <MiniEquityCurve />
-              </div>
-            </div>
-          )}
-        </>
-        )}
 
         {/* STATISTICS TAB */}
         {activeTab === 'statistics' && (
@@ -937,7 +941,7 @@ export default function AccountPage() {
             <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Write Your Thoughts</div>
-                <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} style={{ padding: '8px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px' }} />
+                <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} style={{ padding: '8px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
               </div>
               <textarea 
                 value={noteText} 
@@ -1018,22 +1022,22 @@ export default function AccountPage() {
                   <div key={input.id} style={{ gridColumn: input.type === 'textarea' ? 'span 2' : 'span 1' }}>
                     <label style={{ display: 'block', fontSize: '10px', color: '#555', marginBottom: '6px', textTransform: 'uppercase' }}>{input.label} {input.required && <span style={{ color: '#ef4444' }}>*</span>}</label>
                     {input.type === 'select' ? (
-                      <select value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
+                      <select value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
                         {input.options?.map(o => <option key={o} value={o.toLowerCase()}>{o}</option>)}
                       </select>
                     ) : input.type === 'textarea' ? (
-                      <textarea value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} rows={3} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', resize: 'none', boxSizing: 'border-box' }} />
+                      <textarea value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} rows={3} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', resize: 'none', boxSizing: 'border-box' }} />
                     ) : input.type === 'rating' ? (
                       <div style={{ display: 'flex', gap: '8px' }}>{[1,2,3,4,5].map(i => <button key={i} onClick={() => setTradeForm({...tradeForm, [input.id]: String(i)})} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '24px', color: i <= parseInt(tradeForm[input.id] || 0) ? '#22c55e' : '#333' }}>★</button>)}</div>
                     ) : (
-                      <input type={input.type} value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} step={input.type === 'number' ? '0.1' : undefined} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }} />
+                      <input type={input.type} value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} step={input.type === 'number' ? '0.1' : undefined} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }} />
                     )}
                   </div>
                 ))}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={addTrade} disabled={saving || !tradeForm.symbol || !tradeForm.pnl} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer', opacity: (saving || !tradeForm.symbol || !tradeForm.pnl) ? 0.5 : 1 }}>{saving ? 'Saving...' : 'Save Trade'}</button>
-                <button onClick={() => setShowAddTrade(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={addTrade} disabled={saving || !tradeForm.symbol || !tradeForm.pnl} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer', opacity: (saving || !tradeForm.symbol || !tradeForm.pnl) ? 0.5 : 1 }}>{saving ? 'Saving...' : 'Save Trade'}</button>
+                <button onClick={() => setShowAddTrade(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           </div>
@@ -1047,8 +1051,8 @@ export default function AccountPage() {
                 {inputs.map((input, i) => (
                   <div key={input.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#0a0a0e', borderRadius: '6px' }}>
                     <input type="checkbox" checked={input.enabled} onChange={e => updateInput(i, 'enabled', e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                    <input type="text" value={input.label} onChange={e => updateInput(i, 'label', e.target.value)} style={{ flex: 1, padding: '8px 12px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px' }} />
-                    <select value={input.type} onChange={e => updateInput(i, 'type', e.target.value)} style={{ padding: '8px 12px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontSize: '11px' }}>
+                    <input type="text" value={input.label} onChange={e => updateInput(i, 'label', e.target.value)} style={{ flex: 1, padding: '8px 12px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
+                    <select value={input.type} onChange={e => updateInput(i, 'type', e.target.value)} style={{ padding: '8px 12px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontSize: '11px' }}>
                       {['text', 'number', 'date', 'select', 'textarea', 'rating'].map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     {input.type === 'select' && <button onClick={() => openOptionsEditor(i)} style={{ padding: '6px 12px', background: '#22c55e', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '10px', cursor: 'pointer' }}>Options</button>}
@@ -1056,10 +1060,10 @@ export default function AccountPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={addNewInput} style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px dashed #1a1a22', borderRadius: '5px', color: '#555', fontSize: '12px', cursor: 'pointer', marginBottom: '18px' }}>+ Add New Field</button>
+              <button onClick={addNewInput} style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px dashed #1a1a22', borderRadius: '6px', color: '#555', fontSize: '12px', cursor: 'pointer', marginBottom: '18px' }}>+ Add New Field</button>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={saveInputs} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Save</button>
-                <button onClick={() => setShowEditInputs(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={saveInputs} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Save</button>
+                <button onClick={() => setShowEditInputs(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           </div>
@@ -1071,7 +1075,7 @@ export default function AccountPage() {
               <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px' }}>Add New Chart</h2>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '10px', color: '#555', marginBottom: '6px', textTransform: 'uppercase' }}>X-Axis (Group By)</label>
-                <select value={newChartX} onChange={e => setNewChartX(e.target.value)} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
+                <select value={newChartX} onChange={e => setNewChartX(e.target.value)} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
                   {[
                     { v: 'session', l: 'Session' },
                     { v: 'timeframe', l: 'Timeframe' },
@@ -1084,7 +1088,7 @@ export default function AccountPage() {
               </div>
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '10px', color: '#555', marginBottom: '6px', textTransform: 'uppercase' }}>Y-Axis (Metric)</label>
-                <select value={newChartY} onChange={e => setNewChartY(e.target.value)} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
+                <select value={newChartY} onChange={e => setNewChartY(e.target.value)} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
                   {[
                     { v: 'winrate', l: 'Win Rate (%)' },
                     { v: 'pnl', l: 'Total PnL ($)' },
@@ -1095,8 +1099,8 @@ export default function AccountPage() {
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={addNewChart} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Add Chart</button>
-                <button onClick={() => setShowAddChart(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={addNewChart} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Add Chart</button>
+                <button onClick={() => setShowAddChart(false)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           </div>
@@ -1107,10 +1111,10 @@ export default function AccountPage() {
             <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '24px', width: '340px' }} onClick={e => e.stopPropagation()}>
               <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '14px' }}>Edit Options</h2>
               <p style={{ fontSize: '11px', color: '#555', marginBottom: '14px' }}>One option per line</p>
-              <textarea value={optionsText} onChange={e => setOptionsText(e.target.value)} rows={8} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '5px', color: '#fff', fontSize: '12px', resize: 'none', boxSizing: 'border-box', marginBottom: '16px' }} />
+              <textarea value={optionsText} onChange={e => setOptionsText(e.target.value)} rows={8} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', resize: 'none', boxSizing: 'border-box', marginBottom: '16px' }} />
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={saveOptions} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '5px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Save</button>
-                <button onClick={() => setEditingOptions(null)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={saveOptions} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Save</button>
+                <button onClick={() => setEditingOptions(null)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           </div>
@@ -1121,7 +1125,7 @@ export default function AccountPage() {
             <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '24px', width: '500px' }} onClick={e => e.stopPropagation()}>
               <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '14px' }}>Trade Notes</h2>
               <div style={{ background: '#0a0a0e', borderRadius: '6px', padding: '16px', maxHeight: '300px', overflowY: 'auto', fontSize: '14px', color: '#888', lineHeight: '1.7' }}>{showExpandedNote}</div>
-              <button onClick={() => setShowExpandedNote(null)} style={{ marginTop: '16px', width: '100%', padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '5px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Close</button>
+              <button onClick={() => setShowExpandedNote(null)} style={{ marginTop: '16px', width: '100%', padding: '14px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Close</button>
             </div>
           </div>
         )}
