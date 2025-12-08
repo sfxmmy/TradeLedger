@@ -459,7 +459,17 @@ export default function AccountPage() {
     )
   }
 
-  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ textAlign: 'center' }}><div style={{ fontSize: '24px', marginBottom: '16px' }}><span style={{ color: '#22c55e' }}>LSD</span>TRADE+</div><div style={{ color: '#888' }}>Loading...</div></div></div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '16px' }}>
+          <span style={{ color: '#22c55e' }}>LSD</span>
+          <span style={{ color: '#fff' }}>TRADE+</span>
+        </div>
+        <div style={{ color: '#888' }}>Loading...</div>
+      </div>
+    </div>
+  )
 
   // Stats calculations
   const wins = trades.filter(t => t.outcome === 'win').length
@@ -604,231 +614,241 @@ export default function AccountPage() {
 
         {/* STATISTICS TAB */}
         {activeTab === 'statistics' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Description */}
-            <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#888', margin: 0, lineHeight: 1.6 }}>
-                In the statistics area, you can examine your trade results. Customise graphs by using inputs & can organize info however you want.
-              </p>
-            </div>
-
-            {/* OVERALL STATS Row - 5 columns */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
-              {[
-                { l: 'TOTAL PNL', v: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, c: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
-                { l: 'WINRATE', v: `${winrate}%`, c: winrate >= 50 ? '#22c55e' : '#ef4444' },
-                { l: 'PROFIT FACTOR', v: profitFactor, c: '#fff' },
-                { l: 'AVG WIN/LOSS', v: `$${avgWin}/$${avgLoss}`, c: '#fff' },
-                { l: 'CURRENT STREAK', v: `${streaks.cs >= 0 ? '+' : ''}${streaks.cs}`, c: streaks.cs >= 0 ? '#22c55e' : '#ef4444' },
-              ].map((s, i) => (
-                <div key={i} style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                  <div style={{ fontSize: '10px', color: '#888', letterSpacing: '0.5px', marginBottom: '6px' }}>{s.l}</div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: s.c }}>{s.v}</div>
-                </div>
+          <div style={{ display: 'flex', gap: '0', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', overflow: 'hidden' }}>
+            {/* LEFT SIDEBAR - Vertical tabs */}
+            <div style={{ width: '140px', borderRight: '1px solid #1a1a22', display: 'flex', flexDirection: 'column' }}>
+              {['trades', 'statistics', 'notes'].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '20px 16px', background: tab === 'statistics' ? '#1a1a22' : 'transparent', border: 'none', borderBottom: '1px solid #1a1a22', color: tab === 'statistics' ? '#22c55e' : '#888', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}>{tab}</button>
               ))}
             </div>
 
-            {/* Row 2: STATS + BEST PAIR + EQUITY CURVE */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: '16px' }}>
-              {/* STATS Box */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px', fontWeight: 600 }}>STATS</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* MAIN CONTENT AREA */}
+            <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* TOP SECTION: Stats | Graphs | Controls */}
+              <div style={{ display: 'flex', gap: '0', border: '1px solid #1a1a22', borderRadius: '6px', overflow: 'hidden' }}>
+                
+                {/* COLUMN 1: Overall Stats - Vertical */}
+                <div style={{ width: '160px', borderRight: '1px solid #1a1a22', display: 'flex', flexDirection: 'column' }}>
                   {[
-                    { l: 'Average Trend', v: (() => { const dirs = trades.map(t => t.direction?.toLowerCase()); const long = dirs.filter(d => d === 'long').length; const short = dirs.filter(d => d === 'short').length; return long > short ? 'Long' : short > long ? 'Short' : 'Mixed' })() },
-                    { l: 'Average Rating', v: trades.length > 0 ? (trades.reduce((s, t) => s + (parseInt(t.rating) || 0), 0) / trades.length).toFixed(1) + '★' : '-' },
-                    { l: 'Most Traded Pair', v: (() => { const counts = {}; trades.forEach(t => { counts[t.symbol] = (counts[t.symbol] || 0) + 1 }); return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-' })() },
-                    { l: 'Most Traded RR', v: (() => { const counts = {}; trades.forEach(t => { const rr = Math.round(parseFloat(t.rr) || 0); counts[rr] = (counts[rr] || 0) + 1 }); const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]; return top ? top[0] + 'R' : '-' })() },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12px', color: '#888' }}>{item.l}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{item.v}</span>
+                    { l: 'TOTAL PNL', v: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, c: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
+                    { l: 'WINRATE', v: `${winrate}%`, c: winrate >= 50 ? '#22c55e' : '#ef4444' },
+                    { l: 'PROFIT FACTOR', v: profitFactor, c: '#fff' },
+                    { l: 'AVG WIN/LOSS', v: `$${avgWin}/$${avgLoss}`, c: '#fff' },
+                    { l: 'CURRENT STREAK', v: `${streaks.cs >= 0 ? '+' : ''}${streaks.cs}`, c: streaks.cs >= 0 ? '#22c55e' : '#ef4444' },
+                    { l: 'BEST PAIR', v: (() => { const counts = {}; trades.forEach(t => { if (!counts[t.symbol]) counts[t.symbol] = 0; counts[t.symbol] += parseFloat(t.pnl) || 0 }); return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-' })(), c: '#22c55e' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ padding: '14px 16px', borderBottom: i < 5 ? '1px solid #1a1a22' : 'none' }}>
+                      <div style={{ fontSize: '9px', color: '#666', letterSpacing: '0.5px', marginBottom: '4px' }}>{s.l}</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: s.c }}>{s.v}</div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* BEST PAIR */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px', fontWeight: 600 }}>BEST PAIR</div>
-                {(() => {
-                  const pairStats = {}
-                  trades.forEach(t => {
-                    if (!pairStats[t.symbol]) pairStats[t.symbol] = { wins: 0, losses: 0, pnl: 0 }
-                    if (t.outcome === 'win') pairStats[t.symbol].wins++
-                    else if (t.outcome === 'loss') pairStats[t.symbol].losses++
-                    pairStats[t.symbol].pnl += parseFloat(t.pnl) || 0
-                  })
-                  const sorted = Object.entries(pairStats).sort((a, b) => b[1].pnl - a[1].pnl)
-                  const best = sorted[0]
-                  if (!best) return <div style={{ color: '#666', fontSize: '12px' }}>No trades yet</div>
-                  const wr = best[1].wins + best[1].losses > 0 ? Math.round((best[1].wins / (best[1].wins + best[1].losses)) * 100) : 0
-                  const longCount = trades.filter(t => t.symbol === best[0] && t.direction?.toLowerCase() === 'long').length
-                  const shortCount = trades.filter(t => t.symbol === best[0] && t.direction?.toLowerCase() === 'short').length
-                  return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <DonutChart value={wr} size={80} strokeWidth={8} />
-                      <div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{best[0]}</div>
-                        <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>{wr}% winrate</div>
-                        <div style={{ display: 'inline-block', padding: '4px 12px', background: shortCount > longCount ? '#ef444422' : '#22c55e22', border: shortCount > longCount ? '1px solid #ef4444' : '1px solid #22c55e', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: shortCount > longCount ? '#ef4444' : '#22c55e' }}>
-                          {shortCount > longCount ? 'SHORT' : 'LONG'}
-                        </div>
-                      </div>
+                {/* COLUMNS 2-4: Two Graphs Stacked */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid #1a1a22' }}>
+                  {/* TOP GRAPH - Line Chart */}
+                  <div style={{ flex: 1, borderBottom: '1px solid #1a1a22', padding: '16px' }}>
+                    <div style={{ height: '100%', minHeight: '160px' }}>
+                      <StatsEquityCurve />
                     </div>
-                  )
-                })()}
-              </div>
+                  </div>
+                  {/* BOTTOM GRAPH - Bar Chart */}
+                  <div style={{ flex: 1, padding: '16px' }}>
+                    <div style={{ height: '100%', minHeight: '160px' }}>
+                      <BarChart 
+                        data={getChartData(graphGroupBy, 'winrate')} 
+                        showPercent={true}
+                        title=""
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              {/* EQUITY CURVE - Same style as dashboard */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', fontWeight: 600 }}>EQUITY CURVE</div>
-                <div style={{ height: '140px' }}>
-                  <StatsEquityCurve />
+                {/* COLUMN 5: Graph Controls */}
+                <div style={{ width: '200px', display: 'flex', flexDirection: 'column' }}>
+                  {/* Top Graph Controls */}
+                  <div style={{ flex: 1, borderBottom: '1px solid #1a1a22', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>Graph to show</div>
+                    <select value={graphType} onChange={e => setGraphType(e.target.value)} style={{ padding: '10px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%', marginBottom: '10px' }}>
+                      <option value="pnl">PnL</option>
+                      <option value="balance">Balance</option>
+                    </select>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>compared to</div>
+                    <select value={compareMode} onChange={e => setCompareMode(e.target.value)} style={{ padding: '10px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%' }}>
+                      <option value="time">Time</option>
+                      <option value="trades">Trade #</option>
+                    </select>
+                  </div>
+                  {/* Bottom Graph Controls */}
+                  <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>Graph to show</div>
+                    <select style={{ padding: '10px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%', marginBottom: '10px' }}>
+                      <option value="winrate">Winrate</option>
+                      <option value="pnl">PnL</option>
+                      <option value="trades">Trade Count</option>
+                    </select>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>compared to</div>
+                    <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '10px 12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%' }}>
+                      <option value="symbol">Pairs</option>
+                      <option value="session">Session</option>
+                      <option value="confidence">Confidence</option>
+                      <option value="timeframe">Timeframe</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Row 3: TOTAL TRADES + TRADE AMOUNT + WINRATE */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-              {/* TOTAL AMOUNT OF TRADES - Bar Chart */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px', fontWeight: 600 }}>TOTAL AMOUNT OF TRADES</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[
-                    { l: 'Wins', v: wins, c: '#22c55e' },
-                    { l: 'Losses', v: losses, c: '#ef4444' },
-                    { l: 'Breakeven', v: be, c: '#888' },
-                  ].map((item, i) => {
-                    const max = Math.max(wins, losses, be) || 1
-                    const pct = (item.v / max) * 100
+              {/* MIDDLE ROW: Long/Short Bar + Total Trades */}
+              <div style={{ display: 'flex', gap: '16px' }}>
+                {/* Long/Short Bar - spans 2/3 */}
+                <div style={{ flex: 2, background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {(() => {
+                    const longCount = trades.filter(t => t.direction?.toLowerCase() === 'long').length
+                    const shortCount = trades.filter(t => t.direction?.toLowerCase() === 'short').length
+                    const total = longCount + shortCount || 1
+                    const longPct = Math.round((longCount / total) * 100)
+                    const shortPct = 100 - longPct
                     return (
-                      <div key={i}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '12px', color: item.c }}>{item.l}</span>
-                          <span style={{ fontSize: '12px', color: '#fff', fontWeight: 600 }}>{item.v}</span>
+                      <>
+                        <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>LONG {longPct}%</span>
+                        <div style={{ flex: 1, height: '12px', borderRadius: '6px', overflow: 'hidden', display: 'flex' }}>
+                          <div style={{ width: `${longPct}%`, background: '#22c55e', height: '100%' }} />
+                          <div style={{ width: `${shortPct}%`, background: '#ef4444', height: '100%' }} />
                         </div>
-                        <div style={{ height: '10px', background: '#1a1a22', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: item.c, borderRadius: '4px' }} />
-                        </div>
-                      </div>
+                        <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>{shortPct}% SHORT</span>
+                      </>
                     )
-                  })}
+                  })()}
                 </div>
-                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #1a1a22', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: '#888' }}>Total</span>
-                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{trades.length}</span>
+                {/* Total Trades - spans 1/3 */}
+                <div style={{ flex: 1, background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#888' }}>TOTAL AMOUNT OF TRADES</span>
+                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{trades.length}</span>
                 </div>
               </div>
 
-              {/* TRADE AMOUNT - with Confidence dropdown */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>TRADE AMOUNT</span>
-                  <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '6px 10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
-                    <option value="confidence">Confidence ▼</option>
-                    <option value="session">Session</option>
-                    <option value="timeframe">Timeframe</option>
-                  </select>
-                </div>
-                {(() => {
-                  const groups = {}
-                  trades.forEach(t => {
-                    let key = graphGroupBy === 'confidence' ? t.confidence : graphGroupBy === 'session' ? t.session : t.timeframe
-                    if (!key) key = 'Unknown'
-                    groups[key] = (groups[key] || 0) + 1
-                  })
-                  const total = Object.values(groups).reduce((a, b) => a + b, 0) || 1
-                  const sorted = Object.entries(groups).filter(([k]) => k !== 'Unknown').sort((a, b) => b[1] - a[1])
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {sorted.slice(0, 4).map(([key, count], i) => {
-                        const pct = Math.round((count / total) * 100)
-                        const colors = { high: '#22c55e', medium: '#f59e0b', low: '#ef4444' }
-                        const color = colors[key.toLowerCase()] || '#22c55e'
-                        return (
-                          <div key={i}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                              <span style={{ fontSize: '12px', color: '#888', textTransform: 'capitalize' }}>{key}</span>
-                              <span style={{ fontSize: '12px', color: '#fff' }}>{pct}%</span>
-                            </div>
-                            <div style={{ height: '8px', background: '#1a1a22', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '4px' }} />
+              {/* BOTTOM ROW: Two Large Boxes */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                
+                {/* BOTTOM LEFT BOX: Stats + Best Pair Donut */}
+                <div style={{ background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', padding: '20px', display: 'flex' }}>
+                  {/* Left side: Stats list */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '20px' }}>
+                    {[
+                      { l: 'AVG. TREND', v: (() => { const dirs = trades.map(t => t.direction?.toLowerCase()); const long = dirs.filter(d => d === 'long').length; const short = dirs.filter(d => d === 'short').length; return long > short ? 'Long' : short > long ? 'Short' : 'Mixed' })() },
+                      { l: 'AVG. RATING', v: trades.length > 0 ? (trades.reduce((s, t) => s + (parseInt(t.rating) || 0), 0) / trades.length).toFixed(1) + '★' : '-' },
+                      { l: 'AVG. PNL', v: trades.length > 0 ? `$${Math.round(totalPnl / trades.length)}` : '$0' },
+                      { l: 'MOST TRADED PAIR', v: (() => { const counts = {}; trades.forEach(t => { counts[t.symbol] = (counts[t.symbol] || 0) + 1 }); return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-' })() },
+                      { l: 'MOST USED RR', v: (() => { const counts = {}; trades.forEach(t => { const rr = Math.round(parseFloat(t.rr) || 0); counts[rr] = (counts[rr] || 0) + 1 }); const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]; return top ? top[0] + 'R' : '-' })() },
+                      { l: 'BEST RR', v: (() => { const rrStats = {}; trades.forEach(t => { const rr = Math.round(parseFloat(t.rr) || 0); if (!rrStats[rr]) rrStats[rr] = { w: 0, l: 0 }; if (t.outcome === 'win') rrStats[rr].w++; else if (t.outcome === 'loss') rrStats[rr].l++ }); let best = null, bestWr = 0; Object.entries(rrStats).forEach(([rr, s]) => { const wr = s.w + s.l > 0 ? s.w / (s.w + s.l) : 0; if (wr > bestWr) { bestWr = wr; best = rr } }); return best ? `${best}R (${Math.round(bestWr * 100)}%)` : '-' })() },
+                    ].map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '11px', color: '#666' }}>{item.l}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{item.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Vertical divider - not attached to edges */}
+                  <div style={{ width: '1px', background: '#1a1a22', margin: '10px 0' }} />
+                  
+                  {/* Right side: Best Pair Donut */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingLeft: '20px' }}>
+                    {(() => {
+                      const pairStats = {}
+                      trades.forEach(t => {
+                        if (!pairStats[t.symbol]) pairStats[t.symbol] = { wins: 0, losses: 0, pnl: 0 }
+                        if (t.outcome === 'win') pairStats[t.symbol].wins++
+                        else if (t.outcome === 'loss') pairStats[t.symbol].losses++
+                        pairStats[t.symbol].pnl += parseFloat(t.pnl) || 0
+                      })
+                      const sorted = Object.entries(pairStats).sort((a, b) => b[1].pnl - a[1].pnl)
+                      const best = sorted[0]
+                      if (!best) return <div style={{ color: '#666', fontSize: '12px' }}>No trades</div>
+                      const wr = best[1].wins + best[1].losses > 0 ? Math.round((best[1].wins / (best[1].wins + best[1].losses)) * 100) : 0
+                      const lossPct = 100 - wr
+                      // Large ring (outline only)
+                      const size = 120, stroke = 8
+                      const radius = (size - stroke) / 2
+                      const circumference = 2 * Math.PI * radius
+                      const winOffset = circumference * (1 - wr / 100)
+                      return (
+                        <>
+                          <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>BEST PAIR</div>
+                          <div style={{ position: 'relative', width: size, height: size }}>
+                            <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                              {/* Background circle (losses - dark) */}
+                              <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#333" strokeWidth={stroke} />
+                              {/* Wins circle (green) */}
+                              <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#22c55e" strokeWidth={stroke} strokeDasharray={circumference} strokeDashoffset={winOffset} strokeLinecap="round" />
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                              <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{best[0]}</div>
+                              <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>{wr}%</div>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )
-                })()}
-              </div>
-
-              {/* WINRATE comparison */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>WINRATE</span>
-                  <select style={{ padding: '6px 10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
-                    <option>By Confidence ▼</option>
-                  </select>
+                          <div style={{ display: 'flex', gap: '16px', marginTop: '10px', fontSize: '11px' }}>
+                            <span><span style={{ color: '#22c55e' }}>●</span> Wins</span>
+                            <span><span style={{ color: '#333' }}>●</span> Losses</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
                 </div>
-                {(() => {
-                  const conf = { high: { w: 0, l: 0 }, medium: { w: 0, l: 0 }, low: { w: 0, l: 0 } }
-                  trades.forEach(t => {
-                    const c = t.confidence?.toLowerCase()
-                    if (c === 'high') { if (t.outcome === 'win') conf.high.w++; else if (t.outcome === 'loss') conf.high.l++ }
-                    else if (c === 'medium') { if (t.outcome === 'win') conf.medium.w++; else if (t.outcome === 'loss') conf.medium.l++ }
-                    else if (c === 'low') { if (t.outcome === 'win') conf.low.w++; else if (t.outcome === 'loss') conf.low.l++ }
-                  })
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        { l: 'High', wr: conf.high.w + conf.high.l > 0 ? Math.round((conf.high.w / (conf.high.w + conf.high.l)) * 100) : 0 },
-                        { l: 'Medium', wr: conf.medium.w + conf.medium.l > 0 ? Math.round((conf.medium.w / (conf.medium.w + conf.medium.l)) * 100) : 0 },
-                        { l: 'Low', wr: conf.low.w + conf.low.l > 0 ? Math.round((conf.low.w / (conf.low.w + conf.low.l)) * 100) : 0 },
+
+                {/* BOTTOM RIGHT BOX: Trade Analysis */}
+                <div style={{ background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', padding: '20px', display: 'flex' }}>
+                  {/* Left side: Dropdowns */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: '20px' }}>
+                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '12px' }}>TRADE ANALYSIS</div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <select style={{ padding: '10px 12px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%' }}>
+                        <option>Confidence</option>
+                        <option>Session</option>
+                        <option>Timeframe</option>
+                        <option>Direction</option>
+                      </select>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '12px', textAlign: 'center' }}>vs</div>
+                    <div>
+                      <select style={{ padding: '10px 12px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px', width: '100%' }}>
+                        <option>Winrate</option>
+                        <option>PnL</option>
+                        <option>Avg RR</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Vertical divider - not attached to edges */}
+                  <div style={{ width: '1px', background: '#1a1a22', margin: '10px 0' }} />
+                  
+                  {/* Right side: Output */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', paddingLeft: '20px' }}>
+                    {(() => {
+                      const conf = { high: { w: 0, l: 0 }, medium: { w: 0, l: 0 }, low: { w: 0, l: 0 } }
+                      trades.forEach(t => {
+                        const c = t.confidence?.toLowerCase()
+                        if (c === 'high') { if (t.outcome === 'win') conf.high.w++; else if (t.outcome === 'loss') conf.high.l++ }
+                        else if (c === 'medium') { if (t.outcome === 'win') conf.medium.w++; else if (t.outcome === 'loss') conf.medium.l++ }
+                        else if (c === 'low') { if (t.outcome === 'win') conf.low.w++; else if (t.outcome === 'loss') conf.low.l++ }
+                      })
+                      return [
+                        { l: 'HIGH', wr: conf.high.w + conf.high.l > 0 ? Math.round((conf.high.w / (conf.high.w + conf.high.l)) * 100) : 0 },
+                        { l: 'MEDIUM', wr: conf.medium.w + conf.medium.l > 0 ? Math.round((conf.medium.w / (conf.medium.w + conf.medium.l)) * 100) : 0 },
+                        { l: 'LOW', wr: conf.low.w + conf.low.l > 0 ? Math.round((conf.low.w / (conf.low.w + conf.low.l)) * 100) : 0 },
                       ].map((item, i) => (
-                        <div key={i}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: '#888' }}>{item.l}</span>
-                            <span style={{ fontSize: '12px', color: item.wr >= 50 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>{item.wr}%</span>
-                          </div>
-                          <div style={{ height: '8px', background: '#1a1a22', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${item.wr}%`, background: item.wr >= 50 ? '#22c55e' : '#ef4444', borderRadius: '4px' }} />
-                          </div>
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', color: '#888' }}>{item.l}:</span>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: item.wr >= 50 ? '#22c55e' : '#ef4444' }}>{item.wr}% wr</span>
                         </div>
-                      ))}
-                    </div>
-                  )
-                })()}
+                      ))
+                    })()}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Bottom Dropdown Controls */}
-            <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '18px' }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Graph to Show</label>
-                  <select value={graphType} onChange={e => setGraphType(e.target.value)} style={{ padding: '10px 14px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '13px', minWidth: '120px' }}>
-                    <option value="pnl">PnL</option>
-                    <option value="winrate">Winrate</option>
-                    <option value="trades">Trades</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>What to Show</label>
-                  <select style={{ padding: '10px 14px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '13px', minWidth: '120px' }}>
-                    <option>Winners</option>
-                    <option>Losers</option>
-                    <option>All</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#888', marginBottom: '6px', textTransform: 'uppercase' }}>Compare to</label>
-                  <select value={compareMode} onChange={e => setCompareMode(e.target.value)} style={{ padding: '10px 14px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '13px', minWidth: '120px' }}>
-                    <option value="none">None</option>
-                    <option value="time">Time</option>
-                  </select>
-                </div>
-              </div>
             </div>
           </div>
         )}
