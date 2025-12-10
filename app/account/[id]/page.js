@@ -240,7 +240,7 @@ export default function AccountPage() {
       <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', height: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{title}</span>
-          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>&times;</button>}
+          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>X</button>}
         </div>
         <div style={{ padding: '20px', textAlign: 'center', color: '#666', fontSize: '12px' }}>No data available</div>
       </div>
@@ -250,7 +250,7 @@ export default function AccountPage() {
       <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', height: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{title}</span>
-          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>&times;</button>}
+          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>X</button>}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {data.map((item, i) => {
@@ -485,7 +485,7 @@ export default function AccountPage() {
   const avgRR = trades.length > 0 ? (trades.reduce((s, t) => s + (parseFloat(t.rr) || 0), 0) / trades.length).toFixed(2) : '0'
   const grossProfit = trades.filter(t => parseFloat(t.pnl) > 0).reduce((s, t) => s + parseFloat(t.pnl), 0)
   const grossLoss = Math.abs(trades.filter(t => parseFloat(t.pnl) < 0).reduce((s, t) => s + parseFloat(t.pnl), 0))
-  const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? '∞' : '0'
+  const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? 'Inf' : '0'
   const avgWin = wins > 0 ? Math.round(grossProfit / wins) : 0
   const avgLoss = losses > 0 ? Math.round(grossLoss / losses) : 0
 
@@ -510,7 +510,7 @@ export default function AccountPage() {
           <span style={{ color: '#fff' }}>TRADE+</span>
         </a>
         <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px', color: '#fff' }}>JOURNAL AREA</div>
-        <a href="/dashboard" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: '12px', textDecoration: 'none' }}>← Dashboard</a>
+        <a href="/dashboard" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: '12px', textDecoration: 'none' }}>Back to Dashboard</a>
       </header>
 
       {/* Main Layout - Full width with sidebar */}
@@ -599,7 +599,7 @@ export default function AccountPage() {
                               </td>
                               <td style={{ padding: '12px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
-                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>★</span>)}
+                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>*</span>)}
                                 </div>
                               </td>
                               <td style={{ padding: '12px', textAlign: 'center' }}>
@@ -621,7 +621,7 @@ export default function AccountPage() {
                               </td>
                               <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{getDaysAgo(trade.date)}</td>
                               <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px' }}>&times;</button></td>
+                              <td style={{ padding: '12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px' }}>X</button></td>
                             </tr>
                           )
                         })}
@@ -945,7 +945,7 @@ export default function AccountPage() {
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {[
                       { l: 'Avg Trend', v: (() => { const l = trades.filter(t => t.direction?.toLowerCase() === 'long').length; const s = trades.filter(t => t.direction?.toLowerCase() === 'short').length; return l > s ? 'Long' : s > l ? 'Short' : 'Mixed' })() },
-                      { l: 'Avg Rating', v: (trades.reduce((s, t) => s + (parseInt(getExtraData(t).rating) || 0), 0) / (trades.length || 1)).toFixed(1) + '★' },
+                      { l: 'Avg Rating', v: (trades.reduce((s, t) => s + (parseInt(getExtraData(t).rating) || 0), 0) / (trades.length || 1)).toFixed(1) + '*' },
                       { l: 'Avg PnL/Trade', v: `$${Math.round(totalPnl / (trades.length || 1))}` },
                       { l: 'Most Traded', v: (() => { const c = {}; trades.forEach(t => c[t.symbol] = (c[t.symbol] || 0) + 1); return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0] || '-' })() },
                       { l: 'Best Session', v: (() => { const s = {}; trades.forEach(t => { const sess = t.session || 'Unknown'; if (!s[sess]) s[sess] = { w: 0, t: 0 }; s[sess].t++; if (t.outcome === 'win') s[sess].w++ }); const best = Object.entries(s).filter(([k]) => k !== 'Unknown').sort((a, b) => (b[1].w/b[1].t) - (a[1].w/a[1].t))[0]; return best ? best[0] : '-' })() },
@@ -980,8 +980,8 @@ export default function AccountPage() {
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '9px', color: '#666' }}>
-                            <span><span style={{ color: '#22c55e' }}>●</span> {best[1].w}W</span>
-                            <span><span style={{ color: '#333' }}>●</span> {best[1].l}L</span>
+                            <span><span style={{ color: '#22c55e' }}>*</span> {best[1].w}W</span>
+                            <span><span style={{ color: '#333' }}>*</span> {best[1].l}L</span>
                           </div>
                         </>
                       )
@@ -1149,7 +1149,7 @@ export default function AccountPage() {
                             <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>{note.title}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#555' }}>{new Date(note.date).toLocaleDateString()}</span>
-                              <button onClick={() => deleteNote('custom', idx)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>&times;</button>
+                              <button onClick={() => deleteNote('custom', idx)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>X</button>
                             </div>
                           </div>
                           <div style={{ fontSize: '12px', color: '#888', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{note.text}</div>
@@ -1168,7 +1168,7 @@ export default function AccountPage() {
                             <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
                               {new Date(date).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                             </span>
-                            <button onClick={() => deleteNote(notesSubTab, date)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>&times;</button>
+                            <button onClick={() => deleteNote(notesSubTab, date)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>X</button>
                           </div>
                           <div style={{ fontSize: '12px', color: '#888', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{text}</div>
                         </div>
@@ -1198,7 +1198,7 @@ export default function AccountPage() {
                     ) : input.type === 'textarea' ? (
                       <textarea value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} rows={3} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', resize: 'none', boxSizing: 'border-box' }} />
                     ) : input.type === 'rating' ? (
-                      <div style={{ display: 'flex', gap: '8px' }}>{[1,2,3,4,5].map(i => <button key={i} onClick={() => setTradeForm({...tradeForm, [input.id]: String(i)})} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '24px', color: i <= parseInt(tradeForm[input.id] || 0) ? '#22c55e' : '#333' }}>★</button>)}</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>{[1,2,3,4,5].map(i => <button key={i} onClick={() => setTradeForm({...tradeForm, [input.id]: String(i)})} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '24px', color: i <= parseInt(tradeForm[input.id] || 0) ? '#22c55e' : '#333' }}>*</button>)}</div>
                     ) : (
                       <input type={input.type} value={tradeForm[input.id] || ''} onChange={e => setTradeForm({...tradeForm, [input.id]: e.target.value})} step={input.type === 'number' ? '0.1' : undefined} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }} />
                     )}
@@ -1226,7 +1226,7 @@ export default function AccountPage() {
                       {['text', 'number', 'date', 'select', 'textarea', 'rating'].map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     {input.type === 'select' && <button onClick={() => openOptionsEditor(i)} style={{ padding: '6px 12px', background: '#22c55e', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '10px', cursor: 'pointer' }}>Options</button>}
-                    {!['symbol', 'date', 'outcome', 'pnl'].includes(input.id) && <button onClick={() => deleteInput(i)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '18px' }}>&times;</button>}
+                    {!['symbol', 'date', 'outcome', 'pnl'].includes(input.id) && <button onClick={() => deleteInput(i)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '18px' }}>X</button>}
                   </div>
                 ))}
               </div>
@@ -1304,7 +1304,7 @@ export default function AccountPage() {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowExpandedImage(null)}>
             <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
               <img src={showExpandedImage} alt="Trade" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px' }} />
-              <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-45px', right: '0', background: 'transparent', border: 'none', color: '#666', fontSize: '28px', cursor: 'pointer' }}>&times;</button>
+              <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-45px', right: '0', background: 'transparent', border: 'none', color: '#666', fontSize: '28px', cursor: 'pointer' }}>X</button>
             </div>
           </div>
         )}
