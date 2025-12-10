@@ -240,7 +240,7 @@ export default function AccountPage() {
       <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', height: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{title}</span>
-          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>×</button>}
+          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>&times;</button>}
         </div>
         <div style={{ padding: '20px', textAlign: 'center', color: '#666', fontSize: '12px' }}>No data available</div>
       </div>
@@ -250,7 +250,7 @@ export default function AccountPage() {
       <div style={{ padding: '16px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', height: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>{title}</span>
-          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>×</button>}
+          {onRemove && <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '14px' }}>&times;</button>}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {data.map((item, i) => {
@@ -621,7 +621,7 @@ export default function AccountPage() {
                               </td>
                               <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{getDaysAgo(trade.date)}</td>
                               <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px' }}>×</button></td>
+                              <td style={{ padding: '12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px' }}>&times;</button></td>
                             </tr>
                           )
                         })}
@@ -1149,7 +1149,7 @@ export default function AccountPage() {
                             <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>{note.title}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#555' }}>{new Date(note.date).toLocaleDateString()}</span>
-                              <button onClick={() => deleteNote('custom', idx)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                              <button onClick={() => deleteNote('custom', idx)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>&times;</button>
                             </div>
                           </div>
                           <div style={{ fontSize: '12px', color: '#888', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{note.text}</div>
@@ -1168,7 +1168,7 @@ export default function AccountPage() {
                             <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
                               {new Date(date).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                             </span>
-                            <button onClick={() => deleteNote(notesSubTab, date)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                            <button onClick={() => deleteNote(notesSubTab, date)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px' }}>&times;</button>
                           </div>
                           <div style={{ fontSize: '12px', color: '#888', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{text}</div>
                         </div>
@@ -1226,7 +1226,7 @@ export default function AccountPage() {
                       {['text', 'number', 'date', 'select', 'textarea', 'rating'].map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     {input.type === 'select' && <button onClick={() => openOptionsEditor(i)} style={{ padding: '6px 12px', background: '#22c55e', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '10px', cursor: 'pointer' }}>Options</button>}
-                    {!['symbol', 'date', 'outcome', 'pnl'].includes(input.id) && <button onClick={() => deleteInput(i)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '18px' }}>×</button>}
+                    {!['symbol', 'date', 'outcome', 'pnl'].includes(input.id) && <button onClick={() => deleteInput(i)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '18px' }}>&times;</button>}
                   </div>
                 ))}
               </div>
@@ -1304,7 +1304,7 @@ export default function AccountPage() {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowExpandedImage(null)}>
             <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
               <img src={showExpandedImage} alt="Trade" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px' }} />
-              <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-45px', right: '0', background: 'transparent', border: 'none', color: '#666', fontSize: '28px', cursor: 'pointer' }}>×</button>
+              <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-45px', right: '0', background: 'transparent', border: 'none', color: '#666', fontSize: '28px', cursor: 'pointer' }}>&times;</button>
             </div>
           </div>
         )}
