@@ -325,7 +325,7 @@ export default function DashboardPage() {
                                     ) : <span style={{ fontSize: '14px', color: '#444' }}>-</span>}
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>★</span>)}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>*</span>)}</div>
                                   </td>
                                   <td style={{ padding: '12px', textAlign: 'center' }}>
                                     <div style={{ width: '24px', height: '24px', background: trade.image_url ? '#1a1a22' : '#141418', borderRadius: '4px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

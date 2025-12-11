@@ -599,7 +599,7 @@ export default function AccountPage() {
                               </td>
                               <td style={{ padding: '10px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1px' }}>
-                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '12px' }}>★</span>)}
+                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '12px' }}>\u2605</span>)}
                                 </div>
                               </td>
                               <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -659,8 +659,8 @@ export default function AccountPage() {
                     { l: 'Avg Win', v: `$${avgWin}`, c: '#22c55e' },
                     { l: 'Avg Loss', v: `$${avgLoss}`, c: '#ef4444' },
                     { l: 'Streak', v: `${streaks.cs >= 0 ? '+' : ''}${streaks.cs}`, c: streaks.cs >= 0 ? '#22c55e' : '#ef4444' },
-                    { l: 'Best Streak', v: `+${streaks.best || 0}`, c: '#22c55e' },
-                    { l: 'Worst Streak', v: `-${streaks.worst || 0}`, c: '#ef4444' },
+                    { l: 'Best Streak', v: `+${streaks.mw}`, c: '#22c55e' },
+                    { l: 'Worst Streak', v: `-${streaks.ml}`, c: '#ef4444' },
                     { l: 'Total Wins', v: trades.filter(t => t.outcome === 'win').length, c: '#22c55e' },
                     { l: 'Total Losses', v: trades.filter(t => t.outcome === 'loss').length, c: '#ef4444' },
                     { l: 'Best Trade', v: `$${Math.max(...trades.map(t => parseFloat(t.pnl) || 0), 0).toFixed(0)}`, c: '#22c55e' },
