@@ -503,33 +503,33 @@ export default function AccountPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      {/* Header */}
-      <header style={{ padding: '12px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-        <a href="/" style={{ fontSize: '22px', fontWeight: 700, textDecoration: 'none' }}>
+      {/* Header - Compact */}
+      <header style={{ padding: '10px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
+        <a href="/" style={{ fontSize: '20px', fontWeight: 700, textDecoration: 'none' }}>
           <span style={{ color: '#22c55e' }}>LSD</span>
           <span style={{ color: '#fff' }}>TRADE+</span>
         </a>
-        <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px', color: '#fff' }}>JOURNAL AREA</div>
-        <a href="/dashboard" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: '12px', textDecoration: 'none' }}>Back to Dashboard</a>
+        <div style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.5px', color: '#fff' }}>JOURNAL AREA</div>
+        <a href="/dashboard" style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: '11px', textDecoration: 'none' }}>← Dashboard</a>
       </header>
 
       {/* Main Layout - Full width with sidebar */}
       <div style={{ display: 'flex', maxWidth: '1600px', margin: '0 auto' }}>
         
-        {/* LEFT SIDEBAR - Large buttons */}
-        <div style={{ width: '200px', padding: '12px 16px 0', borderRight: '1px solid #1a1a22', minHeight: 'calc(100vh - 50px)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {['trades', 'statistics', 'notes'].map(tab => (
+        {/* LEFT SIDEBAR - LARGE buttons touching top */}
+        <div style={{ width: '180px', padding: '0 12px', borderRight: '1px solid #1a1a22', minHeight: 'calc(100vh - 45px)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {['trades', 'statistics', 'notes'].map((tab, i) => (
               <button 
                 key={tab} 
                 onClick={() => setActiveTab(tab)} 
                 style={{ 
-                  padding: '20px 24px', 
+                  padding: '24px 20px', 
                   background: activeTab === tab ? '#22c55e' : 'transparent', 
-                  border: activeTab === tab ? 'none' : '1px solid #1a1a22', 
-                  borderRadius: '8px', 
-                  color: activeTab === tab ? '#fff' : '#888', 
-                  fontSize: '16px', 
+                  border: 'none',
+                  borderBottom: i < 2 ? '1px solid #1a1a22' : 'none',
+                  color: activeTab === tab ? '#fff' : '#666', 
+                  fontSize: '15px', 
                   fontWeight: 700, 
                   textTransform: 'uppercase', 
                   cursor: 'pointer', 
@@ -544,35 +544,35 @@ export default function AccountPage() {
         </div>
 
         {/* MAIN CONTENT */}
-        <div style={{ flex: 1, padding: '12px 20px' }}>
+        <div style={{ flex: 1, padding: '0 16px 16px' }}>
           
-          {/* Top Row: Name far left, buttons far right */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '22px', fontWeight: 700, color: '#fff' }}>{account?.name}</span>
-              <span style={{ fontSize: '11px', color: '#555', padding: '4px 10px', background: '#141418', borderRadius: '4px' }}>{trades.length} Trades</span>
+          {/* Top Row: Name FAR LEFT, buttons FAR RIGHT - no gap */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', marginBottom: '8px', borderBottom: '1px solid #1a1a22' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{account?.name}</span>
+              <span style={{ fontSize: '10px', color: '#555', padding: '4px 8px', background: '#141418', borderRadius: '4px' }}>{trades.length} Trades</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               {activeTab === 'trades' && (
-                <button onClick={() => setShowEditInputs(true)} style={{ padding: '12px 18px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#888', fontSize: '13px', cursor: 'pointer' }}>Edit Columns</button>
+                <button onClick={() => setShowEditInputs(true)} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '6px', color: '#666', fontSize: '12px', cursor: 'pointer' }}>Edit Columns</button>
               )}
-              <button onClick={() => setShowAddTrade(true)} style={{ padding: '12px 22px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>+ LOG NEW TRADE</button>
+              <button onClick={() => setShowAddTrade(true)} style={{ padding: '10px 18px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>+ LOG NEW TRADE</button>
             </div>
           </div>
 
           {/* TRADES TAB */}
           {activeTab === 'trades' && (
             <>
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '6px', overflow: 'hidden' }}>
                 {trades.length === 0 ? (
-                  <div style={{ padding: '50px', textAlign: 'center', color: '#555', fontSize: '13px' }}>No trades yet. Click "+ LOG NEW TRADE" to add your first trade.</div>
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#555', fontSize: '12px' }}>No trades yet. Click "+ LOG NEW TRADE" to add your first trade.</div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead style={{ position: 'sticky', top: 0, background: '#0a0a0e', zIndex: 5 }}>
                         <tr>
                           {['Symbol', 'W/L', 'PnL', '%', 'RR', 'Trend', 'Confidence', 'Rating', 'Image', 'Notes', 'Placed', 'Date', ''].map((h, i) => (
-                            <th key={i} style={{ padding: '10px 12px', textAlign: 'center', color: '#555', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22', letterSpacing: '0.5px' }}>{h}</th>
+                            <th key={i} style={{ padding: '8px 10px', textAlign: 'center', color: '#555', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22', letterSpacing: '0.5px' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -582,46 +582,46 @@ export default function AccountPage() {
                           const pnlValue = parseFloat(trade.pnl) || 0
                           return (
                             <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
-                              <td style={{ padding: '12px', fontWeight: 600, fontSize: '13px', textAlign: 'center' }}>{trade.symbol}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}>
-                                <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#666' }}>
+                              <td style={{ padding: '10px', fontWeight: 600, fontSize: '12px', textAlign: 'center' }}>{trade.symbol}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#666' }}>
                                   {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
                                 </span>
                               </td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: pnlValue >= 0 ? '#22c55e' : '#ef4444' }}>
+                              <td style={{ padding: '10px', textAlign: 'center', fontWeight: 600, fontSize: '12px', color: pnlValue >= 0 ? '#22c55e' : '#ef4444' }}>
                                 {pnlValue >= 0 ? '+' : ''}${pnlValue.toFixed(0)}
                               </td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: '#555' }}>{extra.riskPercent || '1'}%</td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: '#666' }}>{trade.rr || '-'}</td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: trade.direction === 'long' ? '#22c55e' : '#ef4444' }}>{trade.direction?.toUpperCase() || '-'}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}>
-                                {extra.confidence && <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '10px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#666' }}>{extra.confidence}</span>}
+                              <td style={{ padding: '10px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{extra.riskPercent || '1'}%</td>
+                              <td style={{ padding: '10px', textAlign: 'center', fontSize: '11px', color: '#666' }}>{trade.rr || '-'}</td>
+                              <td style={{ padding: '10px', textAlign: 'center', fontSize: '11px', color: trade.direction === 'long' ? '#22c55e' : '#ef4444' }}>{trade.direction?.toUpperCase() || '-'}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                {extra.confidence && <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '9px', background: extra.confidence === 'High' ? 'rgba(34,197,94,0.1)' : extra.confidence === 'Low' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: extra.confidence === 'High' ? '#22c55e' : extra.confidence === 'Low' ? '#ef4444' : '#666' }}>{extra.confidence}</span>}
                               </td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
-                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>*</span>)}
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '1px' }}>
+                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra.rating || 0) ? '#22c55e' : '#2a2a35', fontSize: '12px' }}>★</span>)}
                                 </div>
                               </td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
                                 {trade.image_url ? (
-                                  <button onClick={() => setShowExpandedImage(trade.image_url)} style={{ width: '26px', height: '26px', background: '#1a1a22', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                                  <button onClick={() => setShowExpandedImage(trade.image_url)} style={{ width: '24px', height: '24px', background: '#1a1a22', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                                   </button>
-                                ) : <div style={{ width: '26px', height: '26px', background: '#141418', borderRadius: '4px', margin: '0 auto' }} />}
+                                ) : <div style={{ width: '24px', height: '24px', background: '#141418', borderRadius: '4px', margin: '0 auto' }} />}
                               </td>
-                              <td style={{ padding: '12px', maxWidth: '150px' }}>
+                              <td style={{ padding: '10px', maxWidth: '130px' }}>
                                 {trade.notes ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '11px', color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{trade.notes}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontSize: '10px', color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{trade.notes}</span>
                                     <button onClick={() => setShowExpandedNote(trade.notes)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px' }}>
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
                                     </button>
                                   </div>
-                                ) : <span style={{ fontSize: '11px', color: '#333' }}>-</span>}
+                                ) : <span style={{ fontSize: '10px', color: '#333' }}>-</span>}
                               </td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{getDaysAgo(trade.date)}</td>
-                              <td style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: '#555' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
-                              <td style={{ padding: '12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '14px' }}>X</button></td>
+                              <td style={{ padding: '10px', textAlign: 'center', fontSize: '10px', color: '#555' }}>{getDaysAgo(trade.date)}</td>
+                              <td style={{ padding: '10px', textAlign: 'center', fontSize: '10px', color: '#555' }}>{new Date(trade.date).getDate()}/{new Date(trade.date).getMonth()+1}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#333', cursor: 'pointer', fontSize: '12px' }}>×</button></td>
                             </tr>
                           )
                         })}
@@ -633,9 +633,9 @@ export default function AccountPage() {
               
               {/* Small PnL Graph below trades */}
               {trades.length > 1 && (
-                <div style={{ marginTop: '12px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px 16px' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Equity Curve</div>
-                  <div style={{ height: '100px' }}>
+                <div style={{ marginTop: '10px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '6px', padding: '10px 14px' }}>
+                  <div style={{ fontSize: '9px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Equity Curve</div>
+                  <div style={{ height: '80px' }}>
                     <MiniEquityCurve />
                   </div>
                 </div>
@@ -1057,21 +1057,21 @@ export default function AccountPage() {
           )}
           {/* NOTES TAB - With Daily/Weekly/Custom sections */}
           {activeTab === 'notes' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               
               {/* Sub-tabs for Daily / Weekly / Custom */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 {['daily', 'weekly', 'custom'].map(sub => (
                   <button 
                     key={sub}
                     onClick={() => setNotesSubTab(sub)}
                     style={{ 
-                      padding: '10px 20px', 
+                      padding: '8px 16px', 
                       background: notesSubTab === sub ? '#22c55e' : 'transparent', 
                       border: notesSubTab === sub ? 'none' : '1px solid #1a1a22', 
                       borderRadius: '6px', 
                       color: notesSubTab === sub ? '#fff' : '#666', 
-                      fontSize: '12px', 
+                      fontSize: '11px', 
                       fontWeight: 600, 
                       cursor: 'pointer',
                       textTransform: 'capitalize'
@@ -1083,19 +1083,19 @@ export default function AccountPage() {
               </div>
 
               {/* Write New Note */}
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '6px', padding: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '9px', color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
                     Write {notesSubTab === 'custom' ? 'Custom Note' : notesSubTab + ' Note'}
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {notesSubTab === 'custom' && (
                       <input 
                         type="text" 
                         placeholder="Note title..." 
                         value={customNoteTitle}
                         onChange={e => setCustomNoteTitle(e.target.value)}
-                        style={{ padding: '6px 10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '11px', width: '150px' }} 
+                        style={{ padding: '5px 8px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '10px', width: '130px' }} 
                       />
                     )}
                     <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} style={{ padding: '6px 10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '11px' }} />
