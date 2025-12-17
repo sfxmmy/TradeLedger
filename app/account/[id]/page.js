@@ -311,8 +311,6 @@ export default function AccountPage() {
               {tab}
             </button>
           ))}
-            </button>
-          ))}
         </div>
         <div style={{ marginTop: 'auto', padding: '14px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px' }}>
           <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.5' }}>{tabDescriptions[activeTab]}</div>
