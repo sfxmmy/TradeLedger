@@ -49,114 +49,124 @@ export default function AccountPage() {
   const [analysisGroupBy, setAnalysisGroupBy] = useState('direction')
   const [analysisMetric, setAnalysisMetric] = useState('avgpnl')
   const [pairAnalysisType, setPairAnalysisType] = useState('best')
+  const [tooltip, setTooltip] = useState(null)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [hoverPoint, setHoverPoint] = useState(null)
-  const [hoverBar, setHoverBar] = useState(null)
-  const [hoverDaily, setHoverDaily] = useState(null)
   const [hasNewInputs, setHasNewInputs] = useState(false)
 
   useEffect(() => { loadData() }, [])
   useEffect(() => {
     const initial = {}
     inputs.forEach(inp => {
-      if (inp.type === 'select' && inp.options?.length) initial[inp.id] = inp.options[0].toLowerCase()
-      else if (inp.type === 'date') initial[inp.id] = new Date().toISOString().split('T')[0]
+      if (inp.type === 'date') initial[inp.id] = new Date().toISOString().split('T')[0]
+      else if (inp.type === 'select' && inp.options?.length) initial[inp.id] = inp.options[0].toLowerCase()
       else if (inp.type === 'rating') initial[inp.id] = '3'
       else initial[inp.id] = ''
     })
     setTradeForm(initial)
-  }, [inputs, showAddTrade])
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  }, [inputs])
 
   async function loadData() {
-    try {
-      const { data: { user: u } } = await supabase.auth.getUser()
-      if (!u) return window.location.href = '/'
-      setUser(u)
-
-      const { data: acc } = await supabase.from('accounts').select('*').eq('id', accountId).single()
-      if (acc) {
-        setAccount(acc)
-        if (acc.custom_inputs) {
-          const parsed = JSON.parse(acc.custom_inputs)
-          if (Array.isArray(parsed)) setInputs(parsed)
-        }
-      }
-
-      const { data: t } = await supabase.from('trades').select('*').eq('account_id', accountId).order('date', { ascending: false })
-      if (t) setTrades(t)
-
-      const { data: n } = await supabase.from('notes').select('*').eq('account_id', accountId)
-      if (n?.length) {
-        const organized = { daily: {}, weekly: {}, custom: [] }
-        n.forEach(note => {
-          if (note.type === 'custom') organized.custom.push({ date: note.date, title: note.title, text: note.content })
-          else organized[note.type] = { ...organized[note.type], [note.date]: note.content }
-        })
-        setNotes(organized)
-      }
-    } catch (e) { console.error(e) }
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '/login'; return }
+    setUser(user)
+    const { data: accountData } = await supabase.from('accounts').select('*').eq('id', accountId).eq('user_id', user.id).single()
+    if (!accountData) { window.location.href = '/dashboard'; return }
+    setAccount(accountData)
+    if (accountData.custom_inputs) { 
+      try { 
+        const parsed = JSON.parse(accountData.custom_inputs)
+        setInputs(parsed)
+        const customInputs = parsed.filter(i => !defaultInputs.find(d => d.id === i.id))
+        if (customInputs.length > 0) setHasNewInputs(true)
+      } catch {} 
+    }
+    if (accountData.notes_data) { try { setNotes(JSON.parse(accountData.notes_data)) } catch {} }
+    const { data: tradesData } = await supabase.from('trades').select('*').eq('account_id', accountId).order('date', { ascending: false })
+    setTrades(tradesData || [])
     setLoading(false)
   }
 
   async function addTrade() {
+    if (!tradeForm.symbol || !tradeForm.pnl) return
     setSaving(true)
-    const { symbol, outcome, pnl, riskPercent, rr, date, direction, ...rest } = tradeForm
-    const { error } = await supabase.from('trades').insert({
-      account_id: accountId,
-      symbol: symbol.toUpperCase(),
-      outcome: outcome?.toLowerCase(),
-      pnl: parseFloat(pnl),
-      risk_percent: parseFloat(riskPercent) || null,
-      rr: parseFloat(rr) || null,
-      date,
-      direction: direction?.toLowerCase(),
-      extra_data: JSON.stringify(rest)
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    
+    // Collect all custom field data
+    const extraData = {}
+    inputs.forEach(inp => {
+      if (!['symbol', 'outcome', 'pnl', 'rr', 'date', 'notes', 'direction', 'image'].includes(inp.id)) {
+        extraData[inp.id] = tradeForm[inp.id] || ''
+      }
     })
-    if (!error) {
-      setShowAddTrade(false)
-      setHasNewInputs(true)
-      loadData()
-    }
+    
+    const { data, error } = await supabase.from('trades').insert({
+      account_id: accountId,
+      symbol: tradeForm.symbol?.toUpperCase(),
+      direction: tradeForm.direction || 'long',
+      outcome: tradeForm.outcome || 'win',
+      pnl: parseFloat(tradeForm.pnl) || 0,
+      rr: parseFloat(tradeForm.rr) || 0,
+      date: tradeForm.date || new Date().toISOString().split('T')[0],
+      notes: tradeForm.notes || '',
+      extra_data: JSON.stringify(extraData)
+    }).select().single()
+    
+    if (error) { alert('Error: ' + error.message); setSaving(false); return }
+    setTrades([data, ...trades])
+    const initial = {}
+    inputs.forEach(inp => {
+      if (inp.type === 'date') initial[inp.id] = new Date().toISOString().split('T')[0]
+      else if (inp.type === 'select' && inp.options?.length) initial[inp.id] = inp.options[0].toLowerCase()
+      else if (inp.type === 'rating') initial[inp.id] = '3'
+      else initial[inp.id] = ''
+    })
+    setTradeForm(initial)
+    setShowAddTrade(false)
     setSaving(false)
   }
 
-  async function deleteTrade(id) {
+  async function deleteTrade(tradeId) {
     if (!confirm('Delete this trade?')) return
-    await supabase.from('trades').delete().eq('id', id)
-    loadData()
-  }
-
-  async function saveNote() {
-    const { error } = await supabase.from('notes').upsert({
-      account_id: accountId, type: notesSubTab, date: noteDate,
-      title: notesSubTab === 'custom' ? customNoteTitle || 'Untitled' : null,
-      content: noteText
-    }, { onConflict: notesSubTab === 'custom' ? undefined : 'account_id,type,date' })
-    if (!error) { setNoteText(''); setCustomNoteTitle(''); loadData() }
-  }
-
-  async function deleteNote(type, key) {
-    if (type === 'custom') {
-      const n = notes.custom[key]
-      await supabase.from('notes').delete().eq('account_id', accountId).eq('type', 'custom').eq('date', n.date).eq('title', n.title)
-    } else {
-      await supabase.from('notes').delete().eq('account_id', accountId).eq('type', type).eq('date', key)
-    }
-    loadData()
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    await supabase.from('trades').delete().eq('id', tradeId)
+    setTrades(trades.filter(t => t.id !== tradeId))
   }
 
   async function saveInputs() {
-    setHasNewInputs(true)
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     await supabase.from('accounts').update({ custom_inputs: JSON.stringify(inputs) }).eq('id', accountId)
+    const customInputs = inputs.filter(i => !defaultInputs.find(d => d.id === i.id))
+    if (customInputs.length > 0) setHasNewInputs(true)
     setShowEditInputs(false)
   }
 
-  function getWeekStart(d) {
-    d = new Date(d)
+  async function saveNote() {
+    if (!noteText.trim()) return
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    const newNotes = { ...notes }
+    if (notesSubTab === 'daily') newNotes.daily = { ...newNotes.daily, [noteDate]: noteText }
+    else if (notesSubTab === 'weekly') { const weekStart = getWeekStart(noteDate); newNotes.weekly = { ...newNotes.weekly, [weekStart]: noteText } }
+    else newNotes.custom = [...(newNotes.custom || []), { title: customNoteTitle || 'Note', text: noteText, date: new Date().toISOString() }]
+    await supabase.from('accounts').update({ notes_data: JSON.stringify(newNotes) }).eq('id', accountId)
+    setNotes(newNotes)
+    setNoteText('')
+    setCustomNoteTitle('')
+  }
+
+  async function deleteNote(type, key) {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    const newNotes = { ...notes }
+    if (type === 'daily') delete newNotes.daily[key]
+    else if (type === 'weekly') delete newNotes.weekly[key]
+    else newNotes.custom = notes.custom.filter((_, i) => i !== key)
+    await supabase.from('accounts').update({ notes_data: JSON.stringify(newNotes) }).eq('id', accountId)
+    setNotes(newNotes)
+  }
+
+  function getWeekStart(dateStr) {
+    const d = new Date(dateStr)
     const day = d.getDay()
     const diff = d.getDate() - day + (day === 0 ? -6 : 1)
     return new Date(d.setDate(diff)).toISOString().split('T')[0]
@@ -234,7 +244,7 @@ export default function AccountPage() {
   const lossExpectancy = trades.length > 0 ? (((100 - winrate) / 100) * avgLoss).toFixed(0) : 0
   const returnOnRisk = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : '-'
 
-  // Calculate consistency score (% of winning days)
+  // Consistency score (% of winning days)
   const consistencyScore = (() => {
     const byDay = {}
     trades.forEach(t => { byDay[t.date] = (byDay[t.date] || 0) + (parseFloat(t.pnl) || 0) })
@@ -244,7 +254,7 @@ export default function AccountPage() {
     return Math.round((winningDays / days.length) * 100)
   })()
 
-  // Calculate monthly growth %
+  // Monthly growth %
   const monthlyGrowth = (() => {
     if (trades.length === 0) return '0'
     const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -269,8 +279,22 @@ export default function AccountPage() {
     notes: 'Keep daily, weekly, and custom notes about your trading journey.'
   }
 
+  // Tooltip component that follows mouse
+  const Tooltip = ({ data }) => {
+    if (!data) return null
+    return (
+      <div style={{ position: 'fixed', left: mousePos.x + 15, top: mousePos.y + 15, background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '8px', padding: '10px 14px', fontSize: '12px', zIndex: 1000, pointerEvents: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+        <div style={{ color: '#888', marginBottom: '4px' }}>{data.date}</div>
+        <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>${data.value?.toLocaleString()}</div>
+        {data.extra && <div style={{ color: data.extra.color || '#22c55e', marginTop: '4px' }}>{data.extra.text}</div>}
+      </div>
+    )
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f' }} onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}>
+      {/* Global Tooltip */}
+      <Tooltip data={tooltip} />
 
       {/* FIXED HEADER */}
       <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, padding: '12px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22', background: '#0a0a0f' }}>
@@ -279,7 +303,7 @@ export default function AccountPage() {
         <a href="/dashboard" style={{ padding: '10px 20px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '8px', color: '#fff', fontSize: '14px', textDecoration: 'none' }}>← Dashboard</a>
       </header>
 
-      {/* FIXED SUBHEADER - removed border between sidebar and account name */}
+      {/* FIXED SUBHEADER */}
       <div style={{ position: 'fixed', top: '57px', left: '180px', right: 0, zIndex: 40, padding: '14px 24px', background: '#0a0a0f', borderBottom: '1px solid #1a1a22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '26px', fontWeight: 700, color: '#fff' }}>{account?.name}</span>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -290,8 +314,8 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* FIXED SIDEBAR - moved buttons lower */}
-      <div style={{ position: 'fixed', top: '57px', left: 0, bottom: 0, width: '180px', padding: '16px 12px', background: '#0a0a0f', zIndex: 45, display: 'flex', flexDirection: 'column', paddingTop: '100px' }}>
+      {/* FIXED SIDEBAR */}
+      <div style={{ position: 'fixed', top: '114px', left: 0, bottom: 0, width: '180px', padding: '16px 12px', background: '#0a0a0f', zIndex: 45, display: 'flex', flexDirection: 'column', paddingTop: '16px', borderRight: '1px solid #1a1a22' }}>
         <div>
           {['trades', 'statistics', 'notes'].map((tab) => (
             <button 
@@ -317,49 +341,57 @@ export default function AccountPage() {
       {/* MAIN CONTENT */}
       <div style={{ marginLeft: '180px', marginTop: '124px', padding: '16px 24px', minHeight: 'calc(100vh - 124px)' }}>
 
-        {/* TRADES TAB - with fixed bottom horizontal scroll */}
+        {/* TRADES TAB */}
         {activeTab === 'trades' && (
-          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)', position: 'relative' }}>
+          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)' }}>
             {trades.length === 0 ? (
               <div style={{ padding: '60px', textAlign: 'center', color: '#888', fontSize: '15px' }}>No trades yet. Click "+ LOG NEW TRADE" to add your first trade.</div>
             ) : (
               <div style={{ flex: 1, overflow: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-                  <thead>
-                    <tr style={{ position: 'sticky', top: 0, background: '#0d0d12', zIndex: 5 }}>
-                      {enabledInputs.map(input => (
-                        <th key={input.id} style={{ padding: '14px 12px', textAlign: 'left', fontSize: '11px', color: '#888', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22', whiteSpace: 'nowrap' }}>{input.label}</th>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr style={{ background: '#0a0a0e' }}>
+                      {['Symbol', 'W/L', 'PnL', '%', 'RR', ...customInputs.map(i => i.label), 'Date', ''].map((h, i) => (
+                        <th key={i} style={{ padding: '14px 12px', textAlign: 'center', color: '#888', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22' }}>{h}</th>
                       ))}
-                      <th style={{ padding: '14px 12px', width: '80px', borderBottom: '1px solid #1a1a22' }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {trades.map((trade, i) => {
+                    {trades.map((trade) => {
                       const extra = getExtraData(trade)
+                      const pnlValue = parseFloat(trade.pnl) || 0
                       return (
-                        <tr key={trade.id} style={{ background: i % 2 ? '#0a0a0e' : 'transparent' }}>
-                          {enabledInputs.map(input => {
-                            let val
-                            if (input.id === 'symbol') val = <span style={{ fontWeight: 600 }}>{trade.symbol}</span>
-                            else if (input.id === 'outcome') val = <span style={{ color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888', fontWeight: 600, textTransform: 'capitalize' }}>{trade.outcome}</span>
-                            else if (input.id === 'pnl') val = <span style={{ color: parseFloat(trade.pnl) >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>{parseFloat(trade.pnl) >= 0 ? '+' : ''}${parseFloat(trade.pnl).toFixed(2)}</span>
-                            else if (input.id === 'riskPercent') val = trade.risk_percent ? `${trade.risk_percent}%` : '-'
-                            else if (input.id === 'rr') val = trade.rr ? `${trade.rr}R` : '-'
-                            else if (input.id === 'date') val = <span style={{ color: '#888' }}>{getDaysAgo(trade.date)}</span>
-                            else if (input.id === 'direction') val = <span style={{ color: trade.direction === 'long' ? '#22c55e' : trade.direction === 'short' ? '#ef4444' : '#888', textTransform: 'capitalize' }}>{trade.direction || '-'}</span>
-                            else if (input.type === 'rating') {
-                              const r = parseInt(extra[input.id]) || 0
-                              val = <div style={{ display: 'flex', gap: '2px' }}>{[1,2,3,4,5].map(j => <span key={j} style={{ color: j <= r ? '#22c55e' : '#333', fontSize: '12px' }}>★</span>)}</div>
-                            }
-                            else if (input.type === 'file' && extra[input.id]) {
-                              val = <img src={extra[input.id]} alt="" onClick={() => setShowExpandedImage(extra[input.id])} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px', cursor: 'pointer' }} />
-                            }
-                            else val = extra[input.id] || '-'
-                            return <td key={input.id} style={{ padding: '12px', fontSize: '13px', borderBottom: '1px solid #1a1a22' }}>{val}</td>
-                          })}
-                          <td style={{ padding: '12px', borderBottom: '1px solid #1a1a22' }}>
-                            <button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                        <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
+                          <td style={{ padding: '14px 12px', fontWeight: 600, fontSize: '16px', textAlign: 'center', color: '#fff' }}>{trade.symbol}</td>
+                          <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                            <span style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
+                              {trade.outcome === 'win' ? 'WIN' : trade.outcome === 'loss' ? 'LOSS' : 'BE'}
+                            </span>
                           </td>
+                          <td style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 600, fontSize: '16px', color: pnlValue >= 0 ? '#22c55e' : '#ef4444' }}>{pnlValue >= 0 ? '+' : ''}${pnlValue.toFixed(0)}</td>
+                          <td style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>{extra.riskPercent || '1'}%</td>
+                          <td style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>{trade.rr || '-'}</td>
+                          {customInputs.map(inp => (
+                            <td key={inp.id} style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>
+                              {inp.type === 'rating' ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra[inp.id] || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>★</span>)}
+                                </div>
+                              ) : inp.id === 'image' && extra[inp.id] ? (
+                                <button onClick={() => setShowExpandedImage(extra[inp.id])} style={{ width: '30px', height: '30px', background: '#1a1a22', borderRadius: '6px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+                                </button>
+                              ) : inp.id === 'notes' && (trade.notes || extra[inp.id]) ? (
+                                <button onClick={() => setShowExpandedNote(trade.notes || extra[inp.id])} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#888', fontSize: '13px' }}>View</button>
+                              ) : (
+                                <span style={{ color: inp.id === 'confidence' && extra[inp.id] === 'High' ? '#22c55e' : inp.id === 'confidence' && extra[inp.id] === 'Low' ? '#ef4444' : inp.id === 'direction' ? (trade.direction === 'long' ? '#22c55e' : '#ef4444') : '#fff' }}>
+                                  {inp.id === 'direction' ? trade.direction?.toUpperCase() : extra[inp.id] || '-'}
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                          <td style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>{new Date(trade.date).toLocaleDateString()}</td>
+                          <td style={{ padding: '14px 12px', textAlign: 'center' }}><button onClick={() => deleteTrade(trade.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '18px' }}>×</button></td>
                         </tr>
                       )
                     })}
@@ -464,18 +496,12 @@ export default function AccountPage() {
                             {hoverPoint && (
                               <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
                             )}
-                            {/* Tooltip - smooth transition across graph */}
+                            {/* Tooltip next to dot */}
                             {hoverPoint && (
-                              <div style={{ 
-                                position: 'absolute', 
-                                left: `${hoverPoint.xPct}%`, 
-                                top: `${hoverPoint.yPct}%`, 
-                                transform: `translate(${-hoverPoint.xPct}%, ${hoverPoint.yPct < 50 ? '15px' : 'calc(-100% - 15px)'})`,
-                                background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' 
-                              }}>
-                                <div style={{ color: '#888', marginBottom: '2px' }}>{hoverPoint.date ? new Date(hoverPoint.date).toLocaleDateString() : 'Start'}</div>
-                                <div style={{ fontWeight: 700, color: '#22c55e' }}>${hoverPoint.balance.toLocaleString()}</div>
-                                {hoverPoint.pnl !== 0 && <div style={{ color: hoverPoint.pnl >= 0 ? '#22c55e' : '#ef4444', fontSize: '10px' }}>{hoverPoint.pnl >= 0 ? '+' : ''}${hoverPoint.pnl.toFixed(0)} {hoverPoint.symbol || ''}</div>}
+                              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: `translate(${hoverPoint.xPct > 80 ? 'calc(-100% - 15px)' : '15px'}, ${hoverPoint.yPct < 20 ? '0%' : hoverPoint.yPct > 80 ? '-100%' : '-50%'})`, background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                                <div style={{ color: '#888' }}>{hoverPoint.date ? new Date(hoverPoint.date).toLocaleDateString() : 'Start'}</div>
+                                <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff' }}>${hoverPoint.balance?.toLocaleString()}</div>
+                                {hoverPoint.symbol && <div style={{ color: hoverPoint.pnl >= 0 ? '#22c55e' : '#ef4444' }}>{hoverPoint.symbol}: {hoverPoint.pnl >= 0 ? '+' : ''}${hoverPoint.pnl?.toFixed(0)}</div>}
                               </div>
                             )}
                           </div>
@@ -487,7 +513,7 @@ export default function AccountPage() {
 
                 {/* Bar Chart */}
                 <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', height: '200px', display: 'flex', gap: '16px' }}>
-                  <div style={{ flex: 1, position: 'relative' }}>
+                  <div style={{ flex: 1 }}>
                     {(() => {
                       const groupedData = {}
                       const customSelects = getCustomSelectInputs()
@@ -514,7 +540,7 @@ export default function AccountPage() {
                         else if (barGraphMetric === 'pnl') { val = d.pnl; disp = (d.pnl >= 0 ? '+' : '') + '$' + Math.round(d.pnl) }
                         else if (barGraphMetric === 'avgpnl') { val = d.count > 0 ? d.pnl / d.count : 0; disp = (val >= 0 ? '+' : '') + '$' + Math.round(val) }
                         else { val = d.count; disp = d.count.toString() }
-                        return { name, val, disp, data: d }
+                        return { name, val, disp }
                       }).sort((a, b) => b.val - a.val).slice(0, 8)
                       
                       if (entries.length === 0) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div>
@@ -526,11 +552,10 @@ export default function AccountPage() {
                             {entries.map((item, i) => {
                               const hPct = Math.max((Math.abs(item.val) / maxVal) * 100, 5)
                               const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
-                              const xPct = ((i + 0.5) / entries.length) * 100
                               return (
                                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-                                  onMouseEnter={() => setHoverBar({ name: item.name, val: item.val, disp: item.disp, isGreen, xPct, data: item.data })}
-                                  onMouseLeave={() => setHoverBar(null)}
+                                  onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
+                                  onMouseLeave={() => setTooltip(null)}
                                 >
                                   <div style={{ fontSize: '11px', color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '3px', fontWeight: 600 }}>{item.disp}</div>
                                   <div style={{ width: '100%', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0' }} />
@@ -538,23 +563,14 @@ export default function AccountPage() {
                               )
                             })}
                           </div>
-                          <div style={{ display: 'flex', gap: '8px', paddingTop: '6px' }}>
-                            {entries.map((item, i) => <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>)}
+                          <div style={{ display: 'flex', gap: '8px', paddingTop: '6px', borderTop: '1px solid #1a1a22' }}>
+                            {entries.map((item, i) => (
+                              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#888' }} />
+                                <div style={{ textAlign: 'center', fontSize: '10px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{item.name}</div>
+                              </div>
+                            ))}
                           </div>
-                          {/* Bar chart tooltip - smooth transition */}
-                          {hoverBar && (
-                            <div style={{ 
-                              position: 'absolute', 
-                              left: `${hoverBar.xPct}%`, 
-                              top: '10px',
-                              transform: `translateX(${-hoverBar.xPct}%)`,
-                              background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' 
-                            }}>
-                              <div style={{ fontWeight: 600, color: '#fff', marginBottom: '2px' }}>{hoverBar.name}</div>
-                              <div style={{ color: hoverBar.isGreen ? '#22c55e' : '#ef4444', fontWeight: 700 }}>{hoverBar.disp}</div>
-                              <div style={{ color: '#888', fontSize: '10px' }}>{hoverBar.data.count} trades • {hoverBar.data.w}W / {hoverBar.data.l}L</div>
-                            </div>
-                          )}
                         </div>
                       )
                     })()}
@@ -589,62 +605,34 @@ export default function AccountPage() {
 
             {/* ROW 2: Net Daily PnL + Direction/Rating */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              {/* Net Daily PnL - same height as bar chart area */}
-              <div style={{ flex: 2, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', position: 'relative' }}>
+              <div style={{ flex: 2, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>Net Daily PnL</div>
-                <div style={{ height: '120px', position: 'relative' }}>
+                <div style={{ height: '100px', position: 'relative' }}>
                   {dailyPnL.length === 0 ? <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div> : (
                     <>
                       {/* Thin horizontal grid lines */}
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
-                        {[0,1,2,3].map(i => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
+                        {[0,1,2,3,4].map(i => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
                       </div>
-                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', gap: '3px', position: 'relative' }}>
+                      <div style={{ height: '100%', display: 'flex', alignItems: 'flex-end', gap: '4px', position: 'relative' }}>
                         {dailyPnL.map((d, i) => {
                           const maxAbs = Math.max(...dailyPnL.map(x => Math.abs(x.pnl)), 1)
-                          const hPct = (Math.abs(d.pnl) / maxAbs) * 45
-                          const xPct = ((i + 0.5) / dailyPnL.length) * 100
+                          const hPct = (Math.abs(d.pnl) / maxAbs) * 100
                           return (
-                            <div 
-                              key={i} 
-                              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'center', position: 'relative' }}
-                              onMouseEnter={() => setHoverDaily({ date: d.date, pnl: d.pnl, xPct })}
-                              onMouseLeave={() => setHoverDaily(null)}
+                            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: d.pnl >= 0 ? 'flex-end' : 'flex-start' }}
+                              onMouseEnter={() => setTooltip({ date: new Date(d.date).toLocaleDateString(), value: d.pnl, extra: { text: (d.pnl >= 0 ? '+' : '') + '$' + d.pnl.toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' } })}
+                              onMouseLeave={() => setTooltip(null)}
                             >
-                              {d.pnl >= 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '50%', justifyContent: 'flex-end' }}>
-                                  <div style={{ width: '100%', maxWidth: '24px', minWidth: '8px', height: `${Math.max(hPct, 3)}%`, background: '#22c55e', borderRadius: '2px 2px 0 0' }} />
-                                </div>
-                              ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '50%', justifyContent: 'flex-start', marginTop: '50%' }}>
-                                  <div style={{ width: '100%', maxWidth: '24px', minWidth: '8px', height: `${Math.max(hPct, 3)}%`, background: '#ef4444', borderRadius: '0 0 2px 2px' }} />
-                                </div>
-                              )}
+                              <div style={{ width: '100%', maxWidth: '30px', height: `${Math.max(hPct, 5)}%`, background: d.pnl >= 0 ? '#22c55e' : '#ef4444', borderRadius: '2px' }} />
                             </div>
                           )
                         })}
-                        {/* Daily PnL tooltip - smooth transition */}
-                        {hoverDaily && (
-                          <div style={{ 
-                            position: 'absolute', 
-                            left: `${hoverDaily.xPct}%`, 
-                            top: hoverDaily.pnl >= 0 ? '5px' : 'auto',
-                            bottom: hoverDaily.pnl < 0 ? '5px' : 'auto',
-                            transform: `translateX(${-hoverDaily.xPct}%)`,
-                            background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' 
-                          }}>
-                            <div style={{ color: '#888', marginBottom: '2px' }}>{new Date(hoverDaily.date).toLocaleDateString()}</div>
-                            <div style={{ fontWeight: 700, color: hoverDaily.pnl >= 0 ? '#22c55e' : '#ef4444' }}>{hoverDaily.pnl >= 0 ? '+' : ''}${hoverDaily.pnl.toFixed(0)}</div>
-                          </div>
-                        )}
                       </div>
                     </>
                   )}
                 </div>
               </div>
-              
-              {/* Direction Split + Avg Rating (reduced height) */}
-              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* Direction Split */}
                 <div>
                   <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', marginBottom: '6px' }}>Direction Split</div>
@@ -657,7 +645,7 @@ export default function AccountPage() {
                     <span style={{ fontSize: '13px', color: '#ef4444', fontWeight: 700 }}>{100 - longPct}% S</span>
                   </div>
                 </div>
-                {/* Average Rating - compact */}
+                {/* Average Rating - horizontal */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderTop: '1px solid #1a1a22' }}>
                   <span style={{ fontSize: '13px', color: '#888' }}>Avg Rating</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -669,24 +657,22 @@ export default function AccountPage() {
             </div>
 
             {/* ROW 2.5: Most Used RR + Most Profitable RR - thin wide section */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px 20px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '13px', color: '#888' }}>Most Used RR</span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{mostUsedRR}</span>
-                </div>
-                <div style={{ width: '1px', height: '24px', background: '#1a1a22' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '13px', color: '#888' }}>Most Profitable RR</span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>{mostProfitableRR}</span>
-                </div>
+            <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px 24px', marginBottom: '16px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '13px', color: '#888' }}>Most Used RR</span>
+                <span style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>{mostUsedRR}</span>
+              </div>
+              <div style={{ width: '1px', height: '24px', background: '#1a1a22' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '13px', color: '#888' }}>Most Profitable RR</span>
+                <span style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>{mostProfitableRR}</span>
               </div>
             </div>
 
-            {/* ROW 3: Stats + Donut + Trade Analysis + Expectancy */}
+            {/* ROW 3: Stats + Donut + Trade Analysis */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              {/* Stats + Donut - narrower, removed RR items */}
-              <div style={{ width: '300px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex' }}>
+              {/* Stats + Donut - narrower */}
+              <div style={{ width: '320px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex' }}>
                 <div style={{ flex: 1 }}>
                   {[
                     { l: 'Avg. Trend', v: avgTrend },
@@ -701,7 +687,7 @@ export default function AccountPage() {
                   ))}
                 </div>
                 <div style={{ width: '1px', background: '#1a1a22', margin: '0 12px' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '100px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '110px' }}>
                   <select value={pairAnalysisType} onChange={e => setPairAnalysisType(e.target.value)} style={{ fontSize: '10px', color: '#888', marginBottom: '6px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '4px', padding: '3px 6px', cursor: 'pointer' }}>
                     <option value="best">Best Pair</option>
                     <option value="worst">Worst Pair</option>
@@ -716,7 +702,7 @@ export default function AccountPage() {
                     else selected = Object.entries(ps).sort((a, b) => b[1].count - a[1].count)[0]
                     if (!selected) return <div style={{ color: '#666' }}>No data</div>
                     const wr = selected[1].w + selected[1].l > 0 ? Math.round((selected[1].w / (selected[1].w + selected[1].l)) * 100) : 0
-                    const size = 70, stroke = 7, r = (size - stroke) / 2, c = 2 * Math.PI * r
+                    const size = 80, stroke = 8, r = (size - stroke) / 2, c = 2 * Math.PI * r
                     return (
                       <>
                         <div style={{ position: 'relative', width: size, height: size }}>
@@ -725,8 +711,8 @@ export default function AccountPage() {
                             <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#22c55e" strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - wr/100)} strokeLinecap="butt" />
                           </svg>
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff' }}>{selected[0]}</div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#22c55e' }}>{wr}%</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{selected[0]}</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#22c55e' }}>{wr}%</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', marginTop: '4px', fontSize: '10px' }}>
@@ -790,24 +776,24 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Average Win / Average Loss - compact */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '130px' }}>
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Average Win</div>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#22c55e' }}>+${avgWin}</div>
+              {/* Average Win / Average Loss / Expectancy - compact */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '130px' }}>
+                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '3px' }}>Average Win</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>+${avgWin}</div>
                 </div>
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Average Loss</div>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#ef4444' }}>-${avgLoss}</div>
+                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '3px' }}>Average Loss</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444' }}>-${avgLoss}</div>
                 </div>
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Expectancy</div>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: parseFloat(expectancy) >= 0 ? '#22c55e' : '#ef4444' }}>${expectancy}</div>
+                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '3px' }}>Expectancy</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: parseFloat(expectancy) >= 0 ? '#22c55e' : '#ef4444' }}>${expectancy}</div>
                 </div>
               </div>
             </div>
 
-            {/* ROW 4: Performance + Streaks - 4 items each */}
+            {/* ROW 4: Performance + Streaks */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Performance</div>
@@ -832,7 +818,7 @@ export default function AccountPage() {
                     { l: 'Max Wins', v: streaks.mw, c: '#22c55e' },
                     { l: 'Max Losses', v: streaks.ml, c: '#ef4444' },
                     { l: 'Days', v: tradingDays, c: '#fff' },
-                    { l: 'Consistency', v: `${consistencyScore}%`, c: consistencyScore >= 50 ? '#22c55e' : '#ef4444' },
+                    { l: 'Consistency', v: consistencyScore + '%', c: consistencyScore >= 50 ? '#22c55e' : '#ef4444' },
                   ].map((item, i) => (
                     <div key={i} style={{ padding: '12px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', textAlign: 'center' }}>
                       <div style={{ fontSize: '13px', color: '#888', marginBottom: '6px' }}>{item.l}</div>
@@ -843,7 +829,7 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* ROW 5: Risk + Progress - 4 items each */}
+            {/* ROW 5: Risk + Progress */}
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Risk Management</div>
@@ -924,7 +910,7 @@ export default function AccountPage() {
                   Object.keys(notes[notesSubTab] || {}).length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No {notesSubTab} notes yet.</div> : Object.entries(notes[notesSubTab] || {}).sort((a, b) => new Date(b[0]) - new Date(a[0])).map(([date, text]) => (
                     <div key={date} style={{ padding: '16px', background: '#0a0a0e', borderRadius: '8px', border: '1px solid #1a1a22' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>{notesSubTab === 'weekly' ? `Week of ${date}` : new Date(date).toLocaleDateString()}</span>
+                        <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>{new Date(date).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
                         <button onClick={() => deleteNote(notesSubTab, date)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px' }}>×</button>
                       </div>
                       <div style={{ fontSize: '14px', color: '#fff', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{text}</div>
@@ -937,7 +923,7 @@ export default function AccountPage() {
         )}
       </div>
 
-      {/* ADD TRADE MODAL */}
+      {/* MODALS */}
       {showAddTrade && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowAddTrade(false)}>
           <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '28px', width: '560px', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
@@ -1001,7 +987,6 @@ export default function AccountPage() {
         </div>
       )}
 
-      {/* EDIT COLUMNS MODAL - green checkboxes */}
       {showEditInputs && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 101 }} onClick={() => setShowEditInputs(false)}>
           <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '28px', width: '520px', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
@@ -1029,25 +1014,36 @@ export default function AccountPage() {
         </div>
       )}
 
-      {/* OPTIONS EDITOR MODAL */}
       {editingOptions !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 102 }} onClick={() => setEditingOptions(null)}>
-          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '28px', width: '400px' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: '#fff' }}>Edit Options</h3>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>Enter each option on a new line:</p>
+          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '28px', width: '360px' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px', color: '#fff' }}>Edit Options</h2>
+            <p style={{ fontSize: '13px', color: '#888', marginBottom: '16px' }}>One option per line</p>
             <textarea value={optionsText} onChange={e => setOptionsText(e.target.value)} rows={8} style={{ width: '100%', padding: '12px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '14px', resize: 'none', boxSizing: 'border-box', marginBottom: '16px' }} />
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={saveOptions} style={{ flex: 1, padding: '12px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setEditingOptions(null)} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '8px', color: '#888', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveOptions} style={{ flex: 1, padding: '14px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setEditingOptions(null)} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '8px', color: '#888', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* EXPANDED IMAGE MODAL */}
+      {showExpandedNote && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowExpandedNote(null)}>
+          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '28px', width: '520px' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px', color: '#fff' }}>Notes</h2>
+            <div style={{ background: '#0a0a0e', borderRadius: '6px', padding: '16px', maxHeight: '320px', overflowY: 'auto', fontSize: '14px', color: '#fff', lineHeight: '1.7' }}>{showExpandedNote}</div>
+            <button onClick={() => setShowExpandedNote(null)} style={{ marginTop: '16px', width: '100%', padding: '14px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '8px', color: '#888', fontWeight: 600, cursor: 'pointer' }}>Close</button>
+          </div>
+        </div>
+      )}
+
       {showExpandedImage && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 103, cursor: 'pointer' }} onClick={() => setShowExpandedImage(null)}>
-          <img src={showExpandedImage} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px' }} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowExpandedImage(null)}>
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+            <img src={showExpandedImage} alt="Trade" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px' }} />
+            <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-50px', right: '0', background: 'transparent', border: 'none', color: '#888', fontSize: '32px', cursor: 'pointer' }}>×</button>
+          </div>
         </div>
       )}
     </div>
