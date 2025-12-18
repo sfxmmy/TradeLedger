@@ -16,6 +16,14 @@ export default function DashboardPage() {
   const [balance, setBalance] = useState('')
   const [editName, setEditName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => { loadData() }, [])
 
@@ -211,24 +219,24 @@ export default function DashboardPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
       {/* Header */}
-      <header style={{ padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22' }}>
-        <a href="/" style={{ fontSize: '28px', fontWeight: 700, textDecoration: 'none' }}>
+      <header style={{ padding: isMobile ? '12px 16px' : '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1a1a22', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? '8px' : '0' }}>
+        <a href="/" style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, textDecoration: 'none' }}>
           <span style={{ color: '#22c55e' }}>LSD</span>
           <span style={{ color: '#fff' }}>TRADE+</span>
         </a>
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px', color: '#fff' }}>JOURNAL DASHBOARD</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setShowModal(true)} style={{ padding: '12px 24px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: '14px', cursor: 'pointer' }}>+ Add Journal Account</button>
-          <button onClick={handleSignOut} style={{ padding: '12px 20px', background: 'transparent', border: 'none', color: '#888', fontSize: '14px', cursor: 'pointer' }}>Sign Out</button>
+        {!isMobile && <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px', color: '#fff' }}>JOURNAL DASHBOARD</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
+          <button onClick={() => setShowModal(true)} style={{ padding: isMobile ? '8px 12px' : '12px 24px', background: 'transparent', border: '1px solid #2a2a35', borderRadius: '6px', color: '#fff', fontSize: isMobile ? '12px' : '14px', cursor: 'pointer' }}>{isMobile ? '+ Add' : '+ Add Journal Account'}</button>
+          <button onClick={handleSignOut} style={{ padding: isMobile ? '8px 12px' : '12px 20px', background: 'transparent', border: 'none', color: '#888', fontSize: isMobile ? '12px' : '14px', cursor: 'pointer' }}>Sign Out</button>
         </div>
       </header>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 40px' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '16px' : '24px 40px' }}>
         {accounts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 40px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px' }}>
-            <h2 style={{ fontSize: '24px', marginBottom: '12px' }}>Welcome to LSDTRADE+</h2>
-            <p style={{ color: '#888', marginBottom: '28px', fontSize: '16px' }}>Create your first trading journal to get started</p>
-            <button onClick={() => setShowModal(true)} style={{ padding: '14px 28px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '16px', cursor: 'pointer' }}>+ Create Your First Journal</button>
+          <div style={{ textAlign: 'center', padding: isMobile ? '40px 20px' : '80px 40px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px' }}>
+            <h2 style={{ fontSize: isMobile ? '20px' : '24px', marginBottom: '12px' }}>Welcome to LSDTRADE+</h2>
+            <p style={{ color: '#888', marginBottom: '28px', fontSize: isMobile ? '14px' : '16px' }}>Create your first trading journal to get started</p>
+            <button onClick={() => setShowModal(true)} style={{ padding: isMobile ? '12px 20px' : '14px 28px', background: '#22c55e', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: isMobile ? '14px' : '16px', cursor: 'pointer' }}>+ Create Your First Journal</button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -251,52 +259,52 @@ export default function DashboardPage() {
               return (
                 <div key={account.id} style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '10px', overflow: 'hidden' }}>
                   {/* Account Name */}
-                  <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <span style={{ fontSize: '28px', fontWeight: 700, color: '#fff' }}>{account.name}</span>
+                  <div style={{ padding: isMobile ? '14px 16px' : '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
+                      <span style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: 700, color: '#fff' }}>{account.name}</span>
                       <button onClick={() => { setEditName(account.name); setShowEditModal(account.id) }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        <svg width={isMobile ? '14' : '18'} height={isMobile ? '14' : '18'} viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                       </button>
                     </div>
                   </div>
 
                   {/* Chart + Stats Row */}
-                  <div style={{ display: 'flex', padding: '0 24px 16px', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', padding: isMobile ? '0 16px 16px' : '0 24px 16px', gap: '16px' }}>
                     {/* Chart */}
-                    <div style={{ flex: 1, height: '340px', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, height: isMobile ? '200px' : '340px', overflow: 'hidden' }}>
                       <EquityCurve accountTrades={accTrades} startingBalance={account.starting_balance} />
                     </div>
 
                     {/* Stats */}
-                    <div style={{ width: '200px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22' }}>
-                        <span style={{ fontSize: '12px', color: '#888' }}>Account Balance</span>
-                        <span style={{ fontSize: '16px', fontWeight: 700, color: currentBalance >= (parseFloat(account.starting_balance) || 0) ? '#22c55e' : '#ef4444' }}>${currentBalance.toLocaleString()}</span>
+                    <div style={{ width: isMobile ? '100%' : '200px', display: 'flex', flexDirection: isMobile ? 'row' : 'column', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '8px 10px' : '10px 14px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', flex: isMobile ? '1 1 100%' : 'none' }}>
+                        <span style={{ fontSize: isMobile ? '11px' : '12px', color: '#888' }}>Account Balance</span>
+                        <span style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: currentBalance >= (parseFloat(account.starting_balance) || 0) ? '#22c55e' : '#ef4444' }}>${currentBalance.toLocaleString()}</span>
                       </div>
                       {[
                         { label: 'Total PnL', value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toLocaleString()}`, color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
                         { label: 'Winrate', value: `${winrate}%`, color: '#fff' },
                         { label: 'Avg RR', value: `${avgRR}R`, color: '#fff' },
                         { label: 'Profit Factor', value: profitFactor, color: '#fff' },
-                        { label: 'Number of Trades', value: accTrades.length, color: '#fff' },
-                        { label: 'Consistency Score', value: `${consistency}%`, color: '#fff' },
+                        { label: 'Trades', value: accTrades.length, color: '#fff' },
+                        { label: 'Consistency', value: `${consistency}%`, color: '#fff' },
                       ].map((stat, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22' }}>
-                          <span style={{ fontSize: '12px', color: '#888' }}>{stat.label}</span>
-                          <span style={{ fontSize: '16px', fontWeight: 600, color: stat.color }}>{stat.value}</span>
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '8px 10px' : '10px 14px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', flex: isMobile ? '1 1 48%' : 'none' }}>
+                          <span style={{ fontSize: isMobile ? '10px' : '12px', color: '#888' }}>{stat.label}</span>
+                          <span style={{ fontSize: isMobile ? '13px' : '16px', fontWeight: 600, color: stat.color }}>{stat.value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Recent Trades */}
-                  <div style={{ padding: '0 24px 16px' }}>
-                    <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #1a1a22', marginLeft: '45px' }}>Recent Trades</div>
+                  <div style={{ padding: isMobile ? '0 16px 16px' : '0 24px 16px' }}>
+                    <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #1a1a22', marginLeft: isMobile ? '0' : '45px' }}>Recent Trades</div>
                     {recentTrades.length === 0 ? (
                       <div style={{ padding: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>No trades yet</div>
                     ) : (
-                      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <div style={{ maxHeight: '200px', overflowY: 'auto', overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '600px' : 'auto' }}>
                           <thead style={{ position: 'sticky', top: 0, background: '#0d0d12' }}>
                             <tr>
                               {['Symbol', 'W/L', 'PnL', 'RR', '%', 'Emotion', 'Rating', 'Image', 'Placed', 'Date'].map((h, i) => (
