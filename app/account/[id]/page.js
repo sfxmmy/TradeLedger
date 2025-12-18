@@ -52,6 +52,8 @@ export default function AccountPage() {
   const [tooltip, setTooltip] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [hoverPoint, setHoverPoint] = useState(null)
+  const [barHover, setBarHover] = useState(null)
+  const [dailyPnlHover, setDailyPnlHover] = useState(null)
   const [hasNewInputs, setHasNewInputs] = useState(false)
 
   useEffect(() => { loadData() }, [])
@@ -557,38 +559,44 @@ export default function AccountPage() {
                         </div>
                         <div style={{ flex: 1, display: 'flex', minHeight: '100px' }}>
                           {/* Y-axis labels */}
-                          <div style={{ width: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '20px', flexShrink: 0 }}>
+                          <div style={{ width: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '18px', flexShrink: 0 }}>
                             {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
                           </div>
                           {/* Chart area */}
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '6px', paddingLeft: '4px', borderBottom: '1px solid #333' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '6px', paddingLeft: '4px' }}>
                               {entries.map((item, i) => {
                                 const hPct = Math.max((Math.abs(item.val) / maxVal) * 100, 5)
                                 const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
+                                const isHovered = barHover === i
                                 return (
-                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative' }}
+                                    onMouseEnter={() => setBarHover(i)}
+                                    onMouseLeave={() => setBarHover(null)}
+                                  >
                                     <div style={{ fontSize: '10px', color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '2px', fontWeight: 600 }}>{item.disp}</div>
-                                    <div style={{ width: '100%', maxWidth: '50px', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0' }} />
+                                    <div style={{ width: '100%', maxWidth: '50px', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0', position: 'relative' }}>
+                                      {isHovered && (
+                                        <>
+                                          <div style={{ position: 'absolute', top: '6px', left: '50%', transform: 'translateX(-50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', zIndex: 5 }} />
+                                          <div style={{ position: 'absolute', top: '2px', left: 'calc(50% + 12px)', background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                                            <div style={{ color: '#888' }}>{item.name}</div>
+                                            <div style={{ fontWeight: 600, color: isGreen ? '#22c55e' : '#ef4444' }}>{item.disp}</div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
                                 )
                               })}
                             </div>
-                            {/* X-axis labels with anchor circles */}
-                            <div style={{ display: 'flex', gap: '6px', paddingTop: '4px', paddingLeft: '4px' }}>
-                              {entries.map((item, i) => {
-                                const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
-                                return (
-                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                    <div 
-                                      style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#666', cursor: 'pointer' }}
-                                      onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
-                                      onMouseLeave={() => setTooltip(null)}
-                                    />
-                                    <div style={{ textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{item.name}</div>
-                                  </div>
-                                )
-                              })}
+                            {/* X-axis line and labels */}
+                            <div style={{ borderTop: '1px solid #333', paddingTop: '4px', paddingLeft: '4px' }}>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {entries.map((item, i) => (
+                                  <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                           {/* Dropdowns */}
@@ -646,22 +654,22 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* ROW 3: Daily PnL + Right Column (Average Rating + PnL by Day on top, Streaks on bottom) */}
+            {/* ROW 3: Net Daily PnL + Right Column (Average Rating + PnL by Day + Streaks) */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              {/* Daily PnL - with anchor tooltips on circles */}
-              <div style={{ flex: 2, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Daily PnL</div>
-                <div style={{ height: '180px', display: 'flex' }}>
+              {/* Net Daily PnL - narrower, with hover green dot inside bars */}
+              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
+                <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Net Daily PnL</div>
+                <div style={{ height: '200px', display: 'flex' }}>
                   {dailyPnL.length === 0 ? <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div> : (() => {
                     const maxAbs = Math.max(...dailyPnL.map(x => Math.abs(x.pnl)), 1)
-                    const yStep = Math.ceil(maxAbs / 3 / 50) * 50 || 100
+                    const yStep = Math.ceil(maxAbs / 3 / 100) * 100 || 100
                     const yMax = Math.ceil(maxAbs / yStep) * yStep
                     const yLabels = []
                     for (let v = yMax; v >= 0; v -= yStep) yLabels.push(v)
                     
                     return (
                       <>
-                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '20px', flexShrink: 0 }}>
+                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '18px', flexShrink: 0 }}>
                           {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>${v}</span>)}
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
@@ -670,29 +678,37 @@ export default function AccountPage() {
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
                               {yLabels.map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
                             </div>
-                            {/* Bars with anchor circles */}
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: '2px', padding: '0 8px' }}>
+                            {/* Bars - hover shows green dot inside */}
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: '1px', padding: '0 4px' }}>
                               {dailyPnL.map((d, i) => {
                                 const hPct = (Math.abs(d.pnl) / yMax) * 100
                                 const isPositive = d.pnl >= 0
+                                const isHovered = dailyPnlHover === i
                                 return (
-                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative' }}>
-                                    <div style={{ width: '100%', maxWidth: '20px', height: `${Math.max(hPct, 3)}%`, background: isPositive ? '#22c55e' : '#ef4444', borderRadius: '2px 2px 0 0' }} />
-                                    {/* Anchor circle at bottom */}
-                                    <div 
-                                      style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#666', marginTop: '4px', cursor: 'pointer' }}
-                                      onMouseEnter={(e) => {
-                                        const rect = e.currentTarget.getBoundingClientRect()
-                                        setTooltip({ date: new Date(d.date).toLocaleDateString(), value: Math.abs(d.pnl), extra: { text: (d.pnl >= 0 ? '+' : '-') + '$' + Math.abs(d.pnl).toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' }, anchorX: rect.left + rect.width/2, anchorY: rect.top })
-                                      }}
-                                      onMouseLeave={() => setTooltip(null)}
-                                    />
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative', minWidth: '4px', maxWidth: '16px' }}
+                                    onMouseEnter={() => setDailyPnlHover(i)}
+                                    onMouseLeave={() => setDailyPnlHover(null)}
+                                  >
+                                    <div style={{ width: '100%', height: `${Math.max(hPct, 3)}%`, background: isPositive ? '#22c55e' : '#ef4444', borderRadius: '1px 1px 0 0', position: 'relative' }}>
+                                      {isHovered && (
+                                        <>
+                                          <div style={{ position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', zIndex: 5 }} />
+                                          <div style={{ position: 'absolute', top: '0px', left: 'calc(50% + 10px)', background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                                            <div style={{ color: '#888' }}>{new Date(d.date).toLocaleDateString()}</div>
+                                            <div style={{ fontWeight: 600, color: isPositive ? '#22c55e' : '#ef4444' }}>{isPositive ? '+' : '-'}${Math.abs(d.pnl).toFixed(0)}</div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
                                 )
                               })}
                             </div>
                           </div>
-                          <div style={{ borderTop: '1px solid #333', height: '1px' }} />
+                          {/* X-axis */}
+                          <div style={{ borderTop: '1px solid #333', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '9px', color: '#666' }}>Days</span>
+                          </div>
                         </div>
                       </>
                     )
@@ -700,22 +716,22 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Right column - Average Rating + PnL by Day on top, Streaks on bottom */}
-              <div style={{ width: '360px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Right column - wider, all boxes equal height */}
+              <div style={{ width: '420px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* Top row: Average Rating + PnL by Day */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {/* Average Rating - compact */}
-                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Average Rating</div>
-                    <div style={{ display: 'flex', gap: '2px', marginBottom: '2px' }}>
-                      {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= Math.round(parseFloat(avgRating)) ? '#22c55e' : '#2a2a35', fontSize: '18px' }}>★</span>)}
+                <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                  {/* Average Rating */}
+                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '8px' }}>Average Rating</div>
+                    <div style={{ display: 'flex', gap: '3px', marginBottom: '6px' }}>
+                      {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= Math.round(parseFloat(avgRating)) ? '#22c55e' : '#2a2a35', fontSize: '22px' }}>★</span>)}
                     </div>
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#fff' }}>{avgRating}</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#fff' }}>{avgRating}</div>
                   </div>
 
-                  {/* PnL by Day - compact */}
-                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px' }}>
-                    <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '6px' }}>PnL by Day</div>
+                  {/* PnL by Day */}
+                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>PnL by Day</div>
                     {(() => {
                       const dayNames = ['M', 'T', 'W', 'T', 'F']
                       const dayPnL = [0, 0, 0, 0, 0]
@@ -725,16 +741,16 @@ export default function AccountPage() {
                       })
                       return (
                         <>
-                          <div style={{ display: 'flex', gap: '3px', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
                             {dayNames.map((name, i) => (
-                              <div key={i} style={{ flex: 1, padding: '4px 2px', background: '#22c55e', borderRadius: '3px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff' }}>{name}</div>
+                              <div key={i} style={{ flex: 1, padding: '6px 4px', background: '#22c55e', borderRadius: '4px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{name}</div>
                               </div>
                             ))}
                           </div>
-                          <div style={{ display: 'flex', gap: '3px' }}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
                             {dayPnL.map((pnl, i) => (
-                              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
                                 {pnl >= 0 ? '+' : ''}{Math.round(pnl)}
                               </div>
                             ))}
@@ -745,19 +761,19 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                {/* Streaks & Consistency - compact, below */}
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px' }}>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '8px' }}>Streaks & Consistency</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                {/* Streaks & Consistency - taller */}
+                <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Streaks & Consistency</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', flex: 1 }}>
                     {[
                       { l: 'Max Wins', v: streaks.mw, c: '#22c55e' },
                       { l: 'Max Losses', v: streaks.ml, c: '#ef4444' },
                       { l: 'Days', v: tradingDays, c: '#fff' },
                       { l: 'Trades/Day', v: avgTradesPerDay, c: '#fff' },
                     ].map((item, i) => (
-                      <div key={i} style={{ padding: '6px', background: '#0a0a0e', borderRadius: '4px', border: '1px solid #1a1a22', textAlign: 'center' }}>
-                        <div style={{ fontSize: '9px', color: '#888', marginBottom: '2px' }}>{item.l}</div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.c }}>{item.v}</div>
+                      <div key={i} style={{ padding: '10px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>{item.l}</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: item.c }}>{item.v}</div>
                       </div>
                     ))}
                   </div>
