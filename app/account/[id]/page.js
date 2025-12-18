@@ -567,19 +567,28 @@ export default function AccountPage() {
                                 const hPct = Math.max((Math.abs(item.val) / maxVal) * 100, 5)
                                 const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
                                 return (
-                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-                                    onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
-                                    onMouseLeave={() => setTooltip(null)}
-                                  >
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                                     <div style={{ fontSize: '10px', color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '2px', fontWeight: 600 }}>{item.disp}</div>
                                     <div style={{ width: '100%', maxWidth: '50px', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0' }} />
                                   </div>
                                 )
                               })}
                             </div>
-                            {/* X-axis labels */}
+                            {/* X-axis labels with anchor circles */}
                             <div style={{ display: 'flex', gap: '6px', paddingTop: '4px', paddingLeft: '4px' }}>
-                              {entries.map((item, i) => <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>)}
+                              {entries.map((item, i) => {
+                                const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
+                                return (
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                    <div 
+                                      style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#666', cursor: 'pointer' }}
+                                      onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
+                                      onMouseLeave={() => setTooltip(null)}
+                                    />
+                                    <div style={{ textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{item.name}</div>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                           {/* Dropdowns */}
@@ -637,9 +646,9 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* ROW 3: Daily PnL (all bars upward) + Average Rating + PnL by Day */}
+            {/* ROW 3: Daily PnL + Right Column (Average Rating + PnL by Day on top, Streaks on bottom) */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              {/* Daily PnL - all bars go UP, red for negative, green for positive */}
+              {/* Daily PnL - with anchor tooltips on circles */}
               <div style={{ flex: 2, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Daily PnL</div>
                 <div style={{ height: '180px', display: 'flex' }}>
@@ -652,33 +661,37 @@ export default function AccountPage() {
                     
                     return (
                       <>
-                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '0', flexShrink: 0 }}>
+                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '20px', flexShrink: 0 }}>
                           {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>${v}</span>)}
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
-                          {/* Chart area */}
                           <div style={{ flex: 1, position: 'relative' }}>
                             {/* Horizontal grid lines */}
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
                               {yLabels.map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
                             </div>
-                            {/* Bars - all go upward from bottom */}
+                            {/* Bars with anchor circles */}
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: '2px', padding: '0 8px' }}>
                               {dailyPnL.map((d, i) => {
                                 const hPct = (Math.abs(d.pnl) / yMax) * 100
                                 const isPositive = d.pnl >= 0
                                 return (
-                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-                                    onMouseEnter={() => setTooltip({ date: new Date(d.date).toLocaleDateString(), value: Math.abs(d.pnl), extra: { text: (d.pnl >= 0 ? '+' : '-') + '$' + Math.abs(d.pnl).toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' } })}
-                                    onMouseLeave={() => setTooltip(null)}
-                                  >
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative' }}>
                                     <div style={{ width: '100%', maxWidth: '20px', height: `${Math.max(hPct, 3)}%`, background: isPositive ? '#22c55e' : '#ef4444', borderRadius: '2px 2px 0 0' }} />
+                                    {/* Anchor circle at bottom */}
+                                    <div 
+                                      style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#666', marginTop: '4px', cursor: 'pointer' }}
+                                      onMouseEnter={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect()
+                                        setTooltip({ date: new Date(d.date).toLocaleDateString(), value: Math.abs(d.pnl), extra: { text: (d.pnl >= 0 ? '+' : '-') + '$' + Math.abs(d.pnl).toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' }, anchorX: rect.left + rect.width/2, anchorY: rect.top })
+                                      }}
+                                      onMouseLeave={() => setTooltip(null)}
+                                    />
                                   </div>
                                 )
                               })}
                             </div>
                           </div>
-                          {/* X-axis line */}
                           <div style={{ borderTop: '1px solid #333', height: '1px' }} />
                         </div>
                       </>
@@ -687,51 +700,75 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Average Rating */}
-              <div style={{ width: '200px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Average Rating</div>
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-                  {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= Math.round(parseFloat(avgRating)) ? '#22c55e' : '#2a2a35', fontSize: '28px' }}>★</span>)}
-                </div>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: '#fff' }}>{avgRating}</div>
-              </div>
+              {/* Right column - Average Rating + PnL by Day on top, Streaks on bottom */}
+              <div style={{ width: '360px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Top row: Average Rating + PnL by Day */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Average Rating - compact */}
+                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Average Rating</div>
+                    <div style={{ display: 'flex', gap: '2px', marginBottom: '2px' }}>
+                      {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= Math.round(parseFloat(avgRating)) ? '#22c55e' : '#2a2a35', fontSize: '18px' }}>★</span>)}
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#fff' }}>{avgRating}</div>
+                  </div>
 
-              {/* PnL by Day */}
-              <div style={{ width: '280px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>PnL by Day</div>
-                {(() => {
-                  const dayNames = ['M', 'T', 'W', 'T', 'F']
-                  const dayPnL = [0, 0, 0, 0, 0]
-                  trades.forEach(t => {
-                    const day = new Date(t.date).getDay()
-                    if (day >= 1 && day <= 5) dayPnL[day - 1] += parseFloat(t.pnl) || 0
-                  })
-                  return (
-                    <>
-                      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-                        {dayNames.map((name, i) => (
-                          <div key={i} style={{ flex: 1, padding: '8px 4px', background: '#22c55e', borderRadius: '4px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>{name}</div>
+                  {/* PnL by Day - compact */}
+                  <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px' }}>
+                    <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '6px' }}>PnL by Day</div>
+                    {(() => {
+                      const dayNames = ['M', 'T', 'W', 'T', 'F']
+                      const dayPnL = [0, 0, 0, 0, 0]
+                      trades.forEach(t => {
+                        const day = new Date(t.date).getDay()
+                        if (day >= 1 && day <= 5) dayPnL[day - 1] += parseFloat(t.pnl) || 0
+                      })
+                      return (
+                        <>
+                          <div style={{ display: 'flex', gap: '3px', marginBottom: '4px' }}>
+                            {dayNames.map((name, i) => (
+                              <div key={i} style={{ flex: 1, padding: '4px 2px', background: '#22c55e', borderRadius: '3px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff' }}>{name}</div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {dayPnL.map((pnl, i) => (
-                          <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
-                            {pnl >= 0 ? '+' : ''}{Math.round(pnl)}
+                          <div style={{ display: 'flex', gap: '3px' }}>
+                            {dayPnL.map((pnl, i) => (
+                              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                                {pnl >= 0 ? '+' : ''}{Math.round(pnl)}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Streaks & Consistency - compact, below */}
+                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px' }}>
+                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '8px' }}>Streaks & Consistency</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    {[
+                      { l: 'Max Wins', v: streaks.mw, c: '#22c55e' },
+                      { l: 'Max Losses', v: streaks.ml, c: '#ef4444' },
+                      { l: 'Days', v: tradingDays, c: '#fff' },
+                      { l: 'Trades/Day', v: avgTradesPerDay, c: '#fff' },
+                    ].map((item, i) => (
+                      <div key={i} style={{ padding: '6px', background: '#0a0a0e', borderRadius: '4px', border: '1px solid #1a1a22', textAlign: 'center' }}>
+                        <div style={{ fontSize: '9px', color: '#888', marginBottom: '2px' }}>{item.l}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: item.c }}>{item.v}</div>
                       </div>
-                    </>
-                  )
-                })()}
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* ROW 4: Stats + Donut + Trade Analysis + Expectancy */}
+            {/* ROW 4: Stats + Donut + Performance + Trade Analysis + Expectancy */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               {/* Stats + Donut */}
-              <div style={{ width: '380px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex' }}>
+              <div style={{ width: '320px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex' }}>
                 <div style={{ flex: 1 }}>
                   {[
                     { l: 'Avg. Trend', v: avgTrend },
@@ -742,14 +779,14 @@ export default function AccountPage() {
                     { l: 'Best RR', v: mostProfitableRR },
                   ].map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: i < 5 ? '1px solid #1a1a22' : 'none' }}>
-                      <span style={{ fontSize: '13px', color: '#888' }}>{item.l}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{item.v}</span>
+                      <span style={{ fontSize: '12px', color: '#888' }}>{item.l}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#fff' }}>{item.v}</span>
                     </div>
                   ))}
                 </div>
-                <div style={{ width: '1px', background: '#1a1a22', margin: '0 12px' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '110px' }}>
-                  <select value={pairAnalysisType} onChange={e => setPairAnalysisType(e.target.value)} style={{ fontSize: '10px', color: '#888', marginBottom: '6px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '4px', padding: '3px 6px', cursor: 'pointer' }}>
+                <div style={{ width: '1px', background: '#1a1a22', margin: '0 10px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '100px' }}>
+                  <select value={pairAnalysisType} onChange={e => setPairAnalysisType(e.target.value)} style={{ fontSize: '9px', color: '#888', marginBottom: '4px', background: 'transparent', border: '1px solid #1a1a22', borderRadius: '4px', padding: '2px 4px', cursor: 'pointer' }}>
                     <option value="best">Best Pair</option>
                     <option value="worst">Worst Pair</option>
                     <option value="most">Most Used</option>
@@ -763,7 +800,7 @@ export default function AccountPage() {
                     else selected = Object.entries(ps).sort((a, b) => b[1].count - a[1].count)[0]
                     if (!selected) return <div style={{ color: '#666' }}>No data</div>
                     const wr = selected[1].w + selected[1].l > 0 ? Math.round((selected[1].w / (selected[1].w + selected[1].l)) * 100) : 0
-                    const size = 80, stroke = 8, r = (size - stroke) / 2, c = 2 * Math.PI * r
+                    const size = 70, stroke = 7, r = (size - stroke) / 2, c = 2 * Math.PI * r
                     return (
                       <>
                         <div style={{ position: 'relative', width: size, height: size }}>
@@ -772,11 +809,11 @@ export default function AccountPage() {
                             <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#22c55e" strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - wr/100)} strokeLinecap="butt" />
                           </svg>
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{selected[0]}</div>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#22c55e' }}>{wr}%</div>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff' }}>{selected[0]}</div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e' }}>{wr}%</div>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', fontSize: '10px' }}>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '2px', fontSize: '9px' }}>
                           <span><span style={{ color: '#22c55e' }}>●</span> W</span>
                           <span><span style={{ color: '#ef4444' }}>●</span> L</span>
                         </div>
@@ -786,11 +823,29 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Trade Analysis - with green border */}
-              <div style={{ flex: 1, background: '#0d0d12', border: '2px solid #22c55e', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Trade Analysis</div>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
-                  <select value={analysisGroupBy} onChange={e => setAnalysisGroupBy(e.target.value)} style={{ flex: 1, padding: '10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '13px' }}>
+              {/* Performance - compact */}
+              <div style={{ width: '280px', background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>Performance</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  {[
+                    { l: 'Best Day', v: bestDay ? `+$${Math.round(bestDay.pnl)}` : '-', c: '#22c55e' },
+                    { l: 'Worst Day', v: worstDay ? `$${Math.round(worstDay.pnl)}` : '-', c: '#ef4444' },
+                    { l: 'Biggest Win', v: `+$${biggestWin}`, c: '#22c55e' },
+                    { l: 'Biggest Loss', v: `$${biggestLoss}`, c: '#ef4444' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ padding: '8px', background: '#0a0a0e', borderRadius: '4px', border: '1px solid #1a1a22', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#888', marginBottom: '3px' }}>{item.l}</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: item.c }}>{item.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trade Analysis - narrower with green border */}
+              <div style={{ flex: 1, background: '#0d0d12', border: '2px solid #22c55e', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>Trade Analysis</div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <select value={analysisGroupBy} onChange={e => setAnalysisGroupBy(e.target.value)} style={{ flex: 1, padding: '8px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px' }}>
                     <option value="direction">Direction</option>
                     <option value="confidence">Confidence</option>
                     <option value="session">Session</option>
@@ -799,14 +854,14 @@ export default function AccountPage() {
                       <option key={inp.id} value={inp.id}>{inp.label}</option>
                     ))}
                   </select>
-                  <select value={analysisMetric} onChange={e => setAnalysisMetric(e.target.value)} style={{ flex: 1, padding: '10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '13px' }}>
+                  <select value={analysisMetric} onChange={e => setAnalysisMetric(e.target.value)} style={{ flex: 1, padding: '8px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px', color: '#fff', fontSize: '12px' }}>
                     <option value="avgpnl">Avg PnL</option>
                     <option value="winrate">Winrate</option>
                     <option value="pnl">Total PnL</option>
                     <option value="count">Count</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {(() => {
                     const groups = {}
                     trades.forEach(t => {
@@ -827,9 +882,9 @@ export default function AccountPage() {
                       else if (analysisMetric === 'pnl') { val = data.pnl; disp = (val >= 0 ? '+' : '') + '$' + Math.round(val) }
                       else { val = data.count; disp = data.count + ' trades' }
                       return (
-                        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#0a0a0e', borderRadius: '6px' }}>
-                          <span style={{ fontSize: '15px', color: '#fff', fontWeight: 500 }}>{name}:</span>
-                          <span style={{ fontSize: '17px', fontWeight: 700, color: val >= 0 ? '#22c55e' : '#ef4444' }}>{disp}</span>
+                        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#0a0a0e', borderRadius: '4px' }}>
+                          <span style={{ fontSize: '13px', color: '#fff', fontWeight: 500 }}>{name}:</span>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: val >= 0 ? '#22c55e' : '#ef4444' }}>{disp}</span>
                         </div>
                       )
                     })
@@ -837,58 +892,22 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Avg Win / Avg Loss / Expectancy widgets - compact */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '130px' }}>
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '2px' }}>Avg Loss Exp.</div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#ef4444' }}>-${avgLoss}</div>
-                  <div style={{ fontSize: '9px', color: '#666' }}>per trade</div>
+              {/* Expectancy widgets - compact */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '110px' }}>
+                <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '9px', color: '#888', textTransform: 'uppercase', marginBottom: '2px' }}>Avg Loss Exp.</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#ef4444' }}>-${avgLoss}</div>
+                  <div style={{ fontSize: '8px', color: '#666' }}>per trade</div>
                 </div>
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', marginBottom: '2px' }}>Expectancy</div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: parseFloat(expectancy) >= 0 ? '#22c55e' : '#ef4444' }}>${expectancy}</div>
-                  <div style={{ fontSize: '9px', color: '#666' }}>per trade</div>
-                </div>
-              </div>
-            </div>
-
-            {/* ROW 4: Performance + Streaks */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Performance</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                  {[
-                    { l: 'Best Day', v: bestDay ? `+$${Math.round(bestDay.pnl)}` : '-', c: '#22c55e' },
-                    { l: 'Worst Day', v: worstDay ? `$${Math.round(worstDay.pnl)}` : '-', c: '#ef4444' },
-                    { l: 'Biggest Win', v: `+$${biggestWin}`, c: '#22c55e' },
-                    { l: 'Biggest Loss', v: `$${biggestLoss}`, c: '#ef4444' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ padding: '12px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', textAlign: 'center' }}>
-                      <div style={{ fontSize: '13px', color: '#888', marginBottom: '6px' }}>{item.l}</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, color: item.c }}>{item.v}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
-                <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Streaks & Consistency</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                  {[
-                    { l: 'Max Wins', v: streaks.mw, c: '#22c55e' },
-                    { l: 'Max Losses', v: streaks.ml, c: '#ef4444' },
-                    { l: 'Days', v: tradingDays, c: '#fff' },
-                    { l: 'Trades/Day', v: avgTradesPerDay, c: '#fff' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ padding: '12px', background: '#0a0a0e', borderRadius: '6px', border: '1px solid #1a1a22', textAlign: 'center' }}>
-                      <div style={{ fontSize: '13px', color: '#888', marginBottom: '6px' }}>{item.l}</div>
-                      <div style={{ fontSize: '20px', fontWeight: 700, color: item.c }}>{item.v}</div>
-                    </div>
-                  ))}
+                <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '9px', color: '#888', textTransform: 'uppercase', marginBottom: '2px' }}>Expectancy</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: parseFloat(expectancy) >= 0 ? '#22c55e' : '#ef4444' }}>${expectancy}</div>
+                  <div style={{ fontSize: '8px', color: '#666' }}>per trade</div>
                 </div>
               </div>
             </div>
 
-            {/* ROW 6: Risk + Progress - 4 items each */}
+            {/* ROW 5: Risk + Progress - 4 items each */}
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Risk Management</div>
