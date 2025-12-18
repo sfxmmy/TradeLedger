@@ -315,7 +315,7 @@ export default function AccountPage() {
       </div>
 
       {/* FIXED SIDEBAR - buttons moved down a bit */}
-      <div style={{ position: 'fixed', top: '57px', left: 0, bottom: 0, width: '180px', padding: '16px 12px', background: '#0a0a0f', zIndex: 45, display: 'flex', flexDirection: 'column', paddingTop: '80px' }}>
+      <div style={{ position: 'fixed', top: '114px', left: 0, bottom: 0, width: '180px', padding: '16px 12px', background: '#0a0a0f', zIndex: 45, display: 'flex', flexDirection: 'column', paddingTop: '16px', borderRight: '1px solid #1a1a22' }}>
         <div>
           {['trades', 'statistics', 'notes'].map((tab) => (
             <button 
@@ -405,7 +405,7 @@ export default function AccountPage() {
         {/* STATISTICS TAB */}
         {activeTab === 'statistics' && (
           <>
-            {/* ROW 1: Stats + Graphs */}
+            {/* ROW 1: Stats + Graphs - both graphs same height, aligned with Total Trades bottom */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               {/* Stats Column */}
               <div style={{ width: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -429,18 +429,18 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Graphs */}
+              {/* Graphs - two equal height boxes */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* Equity Curve - Dashboard style with green dot tooltip */}
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', height: '200px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                {/* Equity Curve */}
+                <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Equity Curve</span>
                     <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
                       <span style={{ color: '#888' }}>Start: <span style={{ color: '#fff' }}>${startingBalance.toLocaleString()}</span></span>
                       <span style={{ color: '#888' }}>Current: <span style={{ color: '#22c55e' }}>${currentBalance.toLocaleString()}</span></span>
                     </div>
                   </div>
-                  <div style={{ height: 'calc(100% - 30px)', position: 'relative', display: 'flex' }}>
+                  <div style={{ flex: 1, position: 'relative', display: 'flex', minHeight: '120px' }}>
                     {(() => {
                       if (trades.length < 2) return <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>Need 2+ trades</div>
                       const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -470,40 +470,44 @@ export default function AccountPage() {
                       
                       return (
                         <>
-                          <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '0px', flexShrink: 0 }}>
+                          <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '16px', flexShrink: 0 }}>
                             {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', lineHeight: 1, textAlign: 'right' }}>${(v/1000).toFixed(0)}k</span>)}
                           </div>
-                          <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333' }}>
-                            <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none"
-                              onMouseMove={e => {
-                                const rect = e.currentTarget.getBoundingClientRect()
-                                const mouseXPct = ((e.clientX - rect.left) / rect.width) * svgW
-                                let closest = chartPoints[0], minDist = Math.abs(mouseXPct - chartPoints[0].x)
-                                chartPoints.forEach(p => { const d = Math.abs(mouseXPct - p.x); if (d < minDist) { minDist = d; closest = p } })
-                                if (minDist < 10) {
-                                  setHoverPoint({ ...closest, xPct: (closest.x / svgW) * 100, yPct: (closest.y / svgH) * 100 })
-                                } else {
-                                  setHoverPoint(null)
-                                }
-                              }}
-                              onMouseLeave={() => setHoverPoint(null)}
-                            >
-                              <defs><linearGradient id="eqG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" /><stop offset="100%" stopColor="#22c55e" stopOpacity="0" /></linearGradient></defs>
-                              <path d={areaD} fill="url(#eqG)" />
-                              <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                            </svg>
-                            {/* Green dot on line */}
-                            {hoverPoint && (
-                              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
-                            )}
-                            {/* Tooltip next to dot */}
-                            {hoverPoint && (
-                              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: `translate(${hoverPoint.xPct > 80 ? 'calc(-100% - 15px)' : '15px'}, ${hoverPoint.yPct < 20 ? '0%' : hoverPoint.yPct > 80 ? '-100%' : '-50%'})`, background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
-                                <div style={{ color: '#888' }}>{hoverPoint.date ? new Date(hoverPoint.date).toLocaleDateString() : 'Start'}</div>
-                                <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff' }}>${hoverPoint.balance?.toLocaleString()}</div>
-                                {hoverPoint.symbol && <div style={{ color: hoverPoint.pnl >= 0 ? '#22c55e' : '#ef4444' }}>{hoverPoint.symbol}: {hoverPoint.pnl >= 0 ? '+' : ''}${hoverPoint.pnl?.toFixed(0)}</div>}
-                              </div>
-                            )}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
+                              <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none"
+                                onMouseMove={e => {
+                                  const rect = e.currentTarget.getBoundingClientRect()
+                                  const mouseXPct = ((e.clientX - rect.left) / rect.width) * svgW
+                                  let closest = chartPoints[0], minDist = Math.abs(mouseXPct - chartPoints[0].x)
+                                  chartPoints.forEach(p => { const d = Math.abs(mouseXPct - p.x); if (d < minDist) { minDist = d; closest = p } })
+                                  if (minDist < 10) {
+                                    setHoverPoint({ ...closest, xPct: (closest.x / svgW) * 100, yPct: (closest.y / svgH) * 100 })
+                                  } else {
+                                    setHoverPoint(null)
+                                  }
+                                }}
+                                onMouseLeave={() => setHoverPoint(null)}
+                              >
+                                <defs><linearGradient id="eqG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" /><stop offset="100%" stopColor="#22c55e" stopOpacity="0" /></linearGradient></defs>
+                                <path d={areaD} fill="url(#eqG)" />
+                                <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                              </svg>
+                              {/* Green dot on line */}
+                              {hoverPoint && (
+                                <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
+                              )}
+                              {/* Tooltip next to dot */}
+                              {hoverPoint && (
+                                <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: `translate(${hoverPoint.xPct > 80 ? 'calc(-100% - 15px)' : '15px'}, ${hoverPoint.yPct < 20 ? '0%' : hoverPoint.yPct > 80 ? '-100%' : '-50%'})`, background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                                  <div style={{ color: '#888' }}>{hoverPoint.date ? new Date(hoverPoint.date).toLocaleDateString() : 'Start'}</div>
+                                  <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff' }}>${hoverPoint.balance?.toLocaleString()}</div>
+                                  {hoverPoint.symbol && <div style={{ color: hoverPoint.pnl >= 0 ? '#22c55e' : '#ef4444' }}>{hoverPoint.symbol}: {hoverPoint.pnl >= 0 ? '+' : ''}${hoverPoint.pnl?.toFixed(0)}</div>}
+                                </div>
+                              )}
+                            </div>
+                            {/* X-axis placeholder */}
+                            <div style={{ height: '16px' }} />
                           </div>
                         </>
                       )
@@ -511,89 +515,102 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                {/* Bar Chart */}
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', height: '200px', display: 'flex', gap: '16px' }}>
-                  <div style={{ flex: 1 }}>
-                    {(() => {
-                      const groupedData = {}
-                      const customSelects = getCustomSelectInputs()
-                      trades.forEach(t => {
-                        let key
-                        if (graphGroupBy === 'symbol') key = t.symbol
-                        else if (['direction', 'session', 'confidence', 'timeframe'].includes(graphGroupBy)) {
-                          key = graphGroupBy === 'direction' ? t.direction : getExtraData(t)[graphGroupBy]
-                        } else {
-                          key = getExtraData(t)[graphGroupBy]
-                        }
-                        if (!key || key === 'Unknown') return
-                        if (!groupedData[key]) groupedData[key] = { w: 0, l: 0, pnl: 0, count: 0 }
-                        groupedData[key].count++
-                        groupedData[key].pnl += parseFloat(t.pnl) || 0
-                        if (t.outcome === 'win') groupedData[key].w++
-                        else if (t.outcome === 'loss') groupedData[key].l++
-                      })
-                      
-                      const entries = Object.entries(groupedData).map(([name, d]) => {
-                        const wr = d.w + d.l > 0 ? Math.round((d.w / (d.w + d.l)) * 100) : 0
-                        let val, disp
-                        if (barGraphMetric === 'winrate') { val = wr; disp = wr + '%' }
-                        else if (barGraphMetric === 'pnl') { val = d.pnl; disp = (d.pnl >= 0 ? '+' : '') + '$' + Math.round(d.pnl) }
-                        else if (barGraphMetric === 'avgpnl') { val = d.count > 0 ? d.pnl / d.count : 0; disp = (val >= 0 ? '+' : '') + '$' + Math.round(val) }
-                        else { val = d.count; disp = d.count.toString() }
-                        return { name, val, disp }
-                      }).sort((a, b) => b.val - a.val).slice(0, 8)
-                      
-                      if (entries.length === 0) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div>
-                      const maxVal = barGraphMetric === 'winrate' ? 100 : Math.max(...entries.map(e => Math.abs(e.val)), 1)
-                      
-                      return (
-                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '8px', paddingBottom: '4px' }}>
-                            {entries.map((item, i) => {
-                              const hPct = Math.max((Math.abs(item.val) / maxVal) * 100, 5)
-                              const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
-                              return (
-                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-                                  onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
-                                  onMouseLeave={() => setTooltip(null)}
-                                >
-                                  <div style={{ fontSize: '11px', color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '3px', fontWeight: 600 }}>{item.disp}</div>
-                                  <div style={{ width: '100%', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0' }} />
-                                </div>
-                              )
-                            })}
+                {/* Bar Chart - with title and Y-axis */}
+                <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                  {(() => {
+                    const groupedData = {}
+                    const customSelects = getCustomSelectInputs()
+                    trades.forEach(t => {
+                      let key
+                      if (graphGroupBy === 'symbol') key = t.symbol
+                      else if (['direction', 'session', 'confidence', 'timeframe'].includes(graphGroupBy)) {
+                        key = graphGroupBy === 'direction' ? t.direction : getExtraData(t)[graphGroupBy]
+                      } else {
+                        key = getExtraData(t)[graphGroupBy]
+                      }
+                      if (!key || key === 'Unknown') return
+                      if (!groupedData[key]) groupedData[key] = { w: 0, l: 0, pnl: 0, count: 0 }
+                      groupedData[key].count++
+                      groupedData[key].pnl += parseFloat(t.pnl) || 0
+                      if (t.outcome === 'win') groupedData[key].w++
+                      else if (t.outcome === 'loss') groupedData[key].l++
+                    })
+                    
+                    const entries = Object.entries(groupedData).map(([name, d]) => {
+                      const wr = d.w + d.l > 0 ? Math.round((d.w / (d.w + d.l)) * 100) : 0
+                      let val, disp
+                      if (barGraphMetric === 'winrate') { val = wr; disp = wr + '%' }
+                      else if (barGraphMetric === 'pnl') { val = d.pnl; disp = (d.pnl >= 0 ? '+' : '') + '$' + Math.round(d.pnl) }
+                      else if (barGraphMetric === 'avgpnl') { val = d.count > 0 ? d.pnl / d.count : 0; disp = (val >= 0 ? '+' : '') + '$' + Math.round(val) }
+                      else { val = d.count; disp = d.count.toString() }
+                      return { name, val, disp }
+                    }).sort((a, b) => b.val - a.val).slice(0, 8)
+                    
+                    if (entries.length === 0) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div>
+                    const maxVal = barGraphMetric === 'winrate' ? 100 : Math.max(...entries.map(e => Math.abs(e.val)), 1)
+                    const yLabels = barGraphMetric === 'winrate' ? ['100%', '75%', '50%', '25%', '0%'] : [maxVal, Math.round(maxVal * 0.75), Math.round(maxVal * 0.5), Math.round(maxVal * 0.25), 0].map(v => barGraphMetric === 'pnl' || barGraphMetric === 'avgpnl' ? '$' + v : v)
+                    
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Performance by {graphGroupBy === 'symbol' ? 'Pair' : graphGroupBy}</span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', minHeight: '100px' }}>
+                          {/* Y-axis labels */}
+                          <div style={{ width: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '20px', flexShrink: 0 }}>
+                            {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
                           </div>
-                          <div style={{ display: 'flex', gap: '8px', paddingTop: '6px' }}>
-                            {entries.map((item, i) => <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>)}
+                          {/* Chart area */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '6px', paddingLeft: '4px', borderBottom: '1px solid #333' }}>
+                              {entries.map((item, i) => {
+                                const hPct = Math.max((Math.abs(item.val) / maxVal) * 100, 5)
+                                const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
+                                return (
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+                                    onMouseEnter={() => setTooltip({ date: item.name, value: item.val, extra: { text: item.disp, color: isGreen ? '#22c55e' : '#ef4444' } })}
+                                    onMouseLeave={() => setTooltip(null)}
+                                  >
+                                    <div style={{ fontSize: '10px', color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '2px', fontWeight: 600 }}>{item.disp}</div>
+                                    <div style={{ width: '100%', maxWidth: '50px', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0' }} />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            {/* X-axis labels */}
+                            <div style={{ display: 'flex', gap: '6px', paddingTop: '4px', paddingLeft: '4px' }}>
+                              {entries.map((item, i) => <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>)}
+                            </div>
+                          </div>
+                          {/* Dropdowns */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center', marginLeft: '12px' }}>
+                            <div style={{ padding: '8px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '9px', color: '#666', marginBottom: '3px' }}>Show</div>
+                              <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ width: '90px', padding: '5px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                                <option value="winrate">Winrate</option>
+                                <option value="pnl">PnL</option>
+                                <option value="avgpnl">Avg PnL</option>
+                                <option value="count">Count</option>
+                              </select>
+                            </div>
+                            <div style={{ padding: '8px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '9px', color: '#666', marginBottom: '3px' }}>Group by</div>
+                              <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ width: '90px', padding: '5px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                                <option value="symbol">Pairs</option>
+                                <option value="direction">Direction</option>
+                                <option value="session">Session</option>
+                                <option value="confidence">Confidence</option>
+                                <option value="timeframe">Timeframe</option>
+                                {getCustomSelectInputs().filter(i => !['direction', 'session', 'confidence', 'timeframe'].includes(i.id)).map(inp => (
+                                  <option key={inp.id} value={inp.id}>{inp.label}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
-                      )
-                    })()}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
-                    <div style={{ padding: '10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>Show</div>
-                      <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ width: '110px', padding: '6px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px' }}>
-                        <option value="winrate">Winrate</option>
-                        <option value="pnl">PnL</option>
-                        <option value="avgpnl">Avg PnL</option>
-                        <option value="count">Count</option>
-                      </select>
-                    </div>
-                    <div style={{ padding: '10px', background: '#0a0a0e', border: '1px solid #1a1a22', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>Group by</div>
-                      <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ width: '110px', padding: '6px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '12px' }}>
-                        <option value="symbol">Pairs</option>
-                        <option value="direction">Direction</option>
-                        <option value="session">Session</option>
-                        <option value="confidence">Confidence</option>
-                        <option value="timeframe">Timeframe</option>
-                        {getCustomSelectInputs().filter(i => !['direction', 'session', 'confidence', 'timeframe'].includes(i.id)).map(inp => (
-                          <option key={inp.id} value={inp.id}>{inp.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -620,9 +637,9 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* ROW 3: Daily PnL (large with Y-axis) + Average Rating + PnL by Day */}
+            {/* ROW 3: Daily PnL (all bars upward) + Average Rating + PnL by Day */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-              {/* Daily PnL - large with Y-axis, bidirectional bars */}
+              {/* Daily PnL - all bars go UP, red for negative, green for positive */}
               <div style={{ flex: 2, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase', marginBottom: '12px' }}>Daily PnL</div>
                 <div style={{ height: '180px', display: 'flex' }}>
@@ -635,39 +652,34 @@ export default function AccountPage() {
                     
                     return (
                       <>
-                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: '8px', flexShrink: 0 }}>
+                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '0', flexShrink: 0 }}>
                           {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>${v}</span>)}
-                          <span style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>$0</span>
                         </div>
-                        <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333' }}>
-                          {/* Horizontal grid lines */}
-                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
-                            {[...yLabels, 0].map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
-                          </div>
-                          {/* Center line at 0 */}
-                          <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1px solid #333' }} />
-                          {/* Bars */}
-                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', gap: '2px', padding: '0 4px' }}>
-                            {dailyPnL.map((d, i) => {
-                              const hPct = (Math.abs(d.pnl) / yMax) * 50
-                              const isPositive = d.pnl >= 0
-                              return (
-                                <div key={i} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                                  onMouseEnter={() => setTooltip({ date: new Date(d.date).toLocaleDateString(), value: d.pnl, extra: { text: (d.pnl >= 0 ? '+' : '') + '$' + d.pnl.toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' } })}
-                                  onMouseLeave={() => setTooltip(null)}
-                                >
-                                  {/* Top half (positive) */}
-                                  <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                    {isPositive && <div style={{ width: '80%', maxWidth: '20px', height: `${hPct}%`, background: '#22c55e', borderRadius: '2px 2px 0 0' }} />}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
+                          {/* Chart area */}
+                          <div style={{ flex: 1, position: 'relative' }}>
+                            {/* Horizontal grid lines */}
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
+                              {yLabels.map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
+                            </div>
+                            {/* Bars - all go upward from bottom */}
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: '2px', padding: '0 8px' }}>
+                              {dailyPnL.map((d, i) => {
+                                const hPct = (Math.abs(d.pnl) / yMax) * 100
+                                const isPositive = d.pnl >= 0
+                                return (
+                                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+                                    onMouseEnter={() => setTooltip({ date: new Date(d.date).toLocaleDateString(), value: Math.abs(d.pnl), extra: { text: (d.pnl >= 0 ? '+' : '-') + '$' + Math.abs(d.pnl).toFixed(0), color: d.pnl >= 0 ? '#22c55e' : '#ef4444' } })}
+                                    onMouseLeave={() => setTooltip(null)}
+                                  >
+                                    <div style={{ width: '100%', maxWidth: '20px', height: `${Math.max(hPct, 3)}%`, background: isPositive ? '#22c55e' : '#ef4444', borderRadius: '2px 2px 0 0' }} />
                                   </div>
-                                  {/* Bottom half (negative) */}
-                                  <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
-                                    {!isPositive && <div style={{ width: '80%', maxWidth: '20px', height: `${hPct}%`, background: '#ef4444', borderRadius: '0 0 2px 2px' }} />}
-                                  </div>
-                                </div>
-                              )
-                            })}
+                                )
+                              })}
+                            </div>
                           </div>
+                          {/* X-axis line */}
+                          <div style={{ borderTop: '1px solid #333', height: '1px' }} />
                         </div>
                       </>
                     )
