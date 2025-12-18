@@ -440,14 +440,12 @@ export default function AccountPage() {
                 {/* Equity Curve with groupBy dropdown */}
                 <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Equity Curve</span>
-                      <button onClick={() => setEnlargedChart(enlargedChart === 'equity' ? null : 'equity')} style={{ background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '4px', padding: '4px 8px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>⛶</button>
+                      <span style={{ fontSize: '12px', color: '#888' }}>Start: <span style={{ color: '#fff' }}>${startingBalance.toLocaleString()}</span></span>
+                      <span style={{ fontSize: '12px', color: '#888' }}>Current: <span style={{ color: '#22c55e' }}>${currentBalance.toLocaleString()}</span></span>
                     </div>
-                    <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
-                      <span style={{ color: '#888' }}>Start: <span style={{ color: '#fff' }}>${startingBalance.toLocaleString()}</span></span>
-                      <span style={{ color: '#888' }}>Current: <span style={{ color: '#22c55e' }}>${currentBalance.toLocaleString()}</span></span>
-                    </div>
+                    <button onClick={() => setEnlargedChart(enlargedChart === 'equity' ? null : 'equity')} style={{ background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '4px', padding: '4px 8px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>⛶</button>
                   </div>
                   <div style={{ flex: 1, position: 'relative', display: 'flex', minHeight: enlargedChart === 'equity' ? '300px' : '120px' }}>
                     {(() => {
@@ -485,18 +483,16 @@ export default function AccountPage() {
                         })
                       }
                       
-                      // Filter lines based on selectedCurveLines checkboxes
                       const visibleLines = equityCurveGroupBy === 'total' ? lines : lines.filter(l => selectedCurveLines[l.name] !== false)
                       
-                      // Calculate Y range - round to multiples of 5 or nice values
                       const allBalances = visibleLines.flatMap(l => l.points.map(p => p.balance))
                       const maxBal = Math.max(...allBalances)
                       const minBal = Math.min(...allBalances)
                       const range = maxBal - minBal || 1000
                       
-                      // Round to nice multiples (5, 10, 50, 100, 500, 1000, etc.)
-                      const getNiceStep = (r) => {
-                        const raw = r / 4
+                      // More Y labels - aim for 6-8 labels
+                      const getNiceStep = (r, targetLabels = 6) => {
+                        const raw = r / targetLabels
                         const mag = Math.pow(10, Math.floor(Math.log10(raw)))
                         const normalized = raw / mag
                         if (normalized <= 1) return mag
@@ -504,17 +500,16 @@ export default function AccountPage() {
                         if (normalized <= 5) return 5 * mag
                         return 10 * mag
                       }
-                      const yStep = getNiceStep(range) || 100
+                      const yStep = getNiceStep(range, 6) || 100
                       const yMax = Math.ceil(maxBal / yStep) * yStep
-                      // For x-axis at zero: if minBal < 0, include 0 in range
                       const yMin = minBal >= 0 ? Math.floor(minBal / yStep) * yStep : Math.floor(minBal / yStep) * yStep
                       const yRange = yMax - yMin || yStep
                       
                       const yLabels = []
                       for (let v = yMax; v >= yMin; v -= yStep) yLabels.push(v)
                       
-                      // Calculate zero line position
-                      const zeroY = minBal < 0 ? ((yMax - 0) / yRange) * 100 : null
+                      const hasNegative = minBal < 0
+                      const zeroY = hasNegative ? ((yMax - 0) / yRange) * 100 : null
                       
                       const svgW = 100, svgH = 100
                       
@@ -533,20 +528,19 @@ export default function AccountPage() {
                       const mainLine = lineData[0]
                       const areaD = equityCurveGroupBy === 'total' && mainLine ? mainLine.pathD + ` L ${mainLine.chartPoints[mainLine.chartPoints.length - 1].x} ${svgH} L ${mainLine.chartPoints[0].x} ${svgH} Z` : null
                       
-                      // Get first and last date for x-axis labels
                       const firstDate = sorted[0]?.date ? new Date(sorted[0].date) : null
                       const lastDate = sorted[sorted.length - 1]?.date ? new Date(sorted[sorted.length - 1].date) : null
                       
                       return (
                         <>
-                          <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '18px', flexShrink: 0 }}>
-                            {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(0)}k` : `$${v}`}</span>)}
+                          <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                            {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                             <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333' }}>
-                              {/* Zero line if values go negative */}
+                              {/* Zero line if values go negative - this is the X axis */}
                               {zeroY !== null && (
-                                <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '1px dashed #444', zIndex: 1 }} />
+                                <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '1px solid #444', zIndex: 1 }} />
                               )}
                               <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none"
                                 onMouseMove={e => {
@@ -554,7 +548,6 @@ export default function AccountPage() {
                                   const mouseX = ((e.clientX - rect.left) / rect.width) * svgW
                                   const mouseY = ((e.clientY - rect.top) / rect.height) * svgH
                                   
-                                  // Find closest point across ALL visible lines
                                   let closestPoint = null, closestDist = Infinity, closestLine = null
                                   lineData.forEach(line => {
                                     line.chartPoints.forEach(p => {
@@ -592,10 +585,9 @@ export default function AccountPage() {
                                 </div>
                               )}
                             </div>
-                            {/* X-axis with date labels */}
-                            <div style={{ borderTop: '1px solid #333', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+                            {/* X-axis - just floating dates, no border if zero line exists */}
+                            <div style={{ height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginLeft: '-1px' }}>
                               <span style={{ fontSize: '9px', color: '#666' }}>{firstDate ? firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
-                              <span style={{ fontSize: '9px', color: '#666' }}>Time</span>
                               <span style={{ fontSize: '9px', color: '#666' }}>{lastDate ? lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
                             </div>
                           </div>
@@ -665,7 +657,7 @@ export default function AccountPage() {
                     
                     if (entries.length === 0) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div>
                     
-                    // Calculate nice Y-axis values in multiples of 5
+                    // Calculate nice Y-axis values with more labels
                     const maxVal = barGraphMetric === 'winrate' ? 100 : Math.max(...entries.map(e => Math.abs(e.val)), 1)
                     const getNiceMax = (v) => {
                       if (v <= 5) return 5
@@ -679,26 +671,25 @@ export default function AccountPage() {
                       return Math.ceil(v / 500) * 500
                     }
                     const niceMax = barGraphMetric === 'winrate' ? 100 : getNiceMax(maxVal)
+                    // More labels - 5 or 6
                     const yLabels = barGraphMetric === 'winrate' 
-                      ? ['100%', '75%', '50%', '25%', '0%'] 
-                      : [niceMax, Math.round(niceMax * 0.75), Math.round(niceMax * 0.5), Math.round(niceMax * 0.25), 0].map(v => barGraphMetric === 'pnl' || barGraphMetric === 'avgpnl' ? '$' + v : v)
+                      ? ['100%', '80%', '60%', '40%', '20%', '0%'] 
+                      : [niceMax, Math.round(niceMax * 0.8), Math.round(niceMax * 0.6), Math.round(niceMax * 0.4), Math.round(niceMax * 0.2), 0].map(v => barGraphMetric === 'pnl' || barGraphMetric === 'avgpnl' ? '$' + v : v)
                     
                     return (
                       <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Performance by {graphGroupBy === 'symbol' ? 'Pair' : graphGroupBy}</span>
-                            <button onClick={() => setEnlargedChart(enlargedChart === 'bar' ? null : 'bar')} style={{ background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '4px', padding: '4px 8px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>⛶</button>
-                          </div>
+                          <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Performance by {graphGroupBy === 'symbol' ? 'Pair' : graphGroupBy}</span>
+                          <button onClick={() => setEnlargedChart(enlargedChart === 'bar' ? null : 'bar')} style={{ background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '4px', padding: '4px 8px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>⛶</button>
                         </div>
                         <div style={{ flex: 1, display: 'flex', minHeight: enlargedChart === 'bar' ? '250px' : '100px' }}>
-                          {/* Y-axis labels - 45px to match equity curve */}
-                          <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '22px', flexShrink: 0 }}>
+                          {/* Y-axis labels - 50px to match equity curve, no padding at bottom */}
+                          <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
                             {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
                           </div>
                           {/* Chart area */}
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '6px', paddingLeft: '4px' }}>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '6px', paddingLeft: '4px', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
                               {entries.map((item, i) => {
                                 const hPct = Math.max((Math.abs(item.val) / niceMax) * 100, 5)
                                 const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
@@ -724,8 +715,8 @@ export default function AccountPage() {
                                 )
                               })}
                             </div>
-                            {/* X-axis line and labels */}
-                            <div style={{ borderTop: '1px solid #333', paddingTop: '4px', paddingLeft: '4px' }}>
+                            {/* X-axis labels only - no top border, starts at same point as chart */}
+                            <div style={{ paddingTop: '4px', paddingLeft: '4px', marginLeft: '1px' }}>
                               <div style={{ display: 'flex', gap: '6px' }}>
                                 {entries.map((item, i) => (
                                   <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '9px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
@@ -794,14 +785,13 @@ export default function AccountPage() {
               <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ fontSize: '13px', color: '#888', textTransform: 'uppercase' }}>Net Daily PnL</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#888', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={includeDaysNotTraded} onChange={e => setIncludeDaysNotTraded(e.target.checked)} style={{ width: '12px', height: '12px' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: '#666', cursor: 'pointer', background: '#0a0a0e', padding: '4px 8px', borderRadius: '4px', border: '1px solid #1a1a22' }}>
+                    <input type="checkbox" checked={includeDaysNotTraded} onChange={e => setIncludeDaysNotTraded(e.target.checked)} style={{ width: '12px', height: '12px', accentColor: '#22c55e' }} />
                     Include non-trading days
                   </label>
                 </div>
                 <div style={{ height: '200px', display: 'flex' }}>
                   {dailyPnL.length === 0 ? <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div> : (() => {
-                    // Build full date range if includeDaysNotTraded
                     let displayData = dailyPnL
                     if (includeDaysNotTraded && dailyPnL.length > 1) {
                       const sorted = [...dailyPnL].sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -817,31 +807,31 @@ export default function AccountPage() {
                     }
                     
                     const maxAbs = Math.max(...displayData.map(x => Math.abs(x.pnl)), 1)
-                    // Nice multiples of 5
+                    // Nice multiples with more labels (6 labels)
                     const getNiceMax = (v) => {
                       if (v <= 50) return Math.ceil(v / 10) * 10
-                      if (v <= 100) return Math.ceil(v / 25) * 25
+                      if (v <= 100) return Math.ceil(v / 20) * 20
+                      if (v <= 250) return Math.ceil(v / 50) * 50
                       if (v <= 500) return Math.ceil(v / 100) * 100
-                      if (v <= 1000) return Math.ceil(v / 250) * 250
+                      if (v <= 1000) return Math.ceil(v / 200) * 200
                       return Math.ceil(v / 500) * 500
                     }
                     const yMax = getNiceMax(maxAbs)
-                    const yStep = yMax / 4
+                    const yStep = yMax / 5
                     const yLabels = []
                     for (let v = yMax; v >= 0; v -= yStep) yLabels.push(Math.round(v))
                     
-                    // Get date range for x-axis labels
                     const sortedData = [...displayData].sort((a, b) => new Date(a.date) - new Date(b.date))
                     const firstDate = sortedData[0]?.date ? new Date(sortedData[0].date) : null
                     const lastDate = sortedData[sortedData.length - 1]?.date ? new Date(sortedData[sortedData.length - 1].date) : null
                     
                     return (
                       <>
-                        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '22px', flexShrink: 0 }}>
-                          {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>${v}</span>)}
+                        <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                          {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', textAlign: 'right' }}>${v}</span>)}
                         </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #333' }}>
-                          <div style={{ flex: 1, position: 'relative' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
                             {/* Horizontal grid lines */}
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
                               {yLabels.map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
@@ -874,10 +864,9 @@ export default function AccountPage() {
                               })}
                             </div>
                           </div>
-                          {/* X-axis with date labels */}
-                          <div style={{ borderTop: '1px solid #333', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+                          {/* X-axis labels - no border, just dates */}
+                          <div style={{ height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginLeft: '1px' }}>
                             <span style={{ fontSize: '9px', color: '#666' }}>{firstDate ? firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
-                            <span style={{ fontSize: '9px', color: '#666' }}>Days</span>
                             <span style={{ fontSize: '9px', color: '#666' }}>{lastDate ? lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
                           </div>
                         </div>
@@ -902,7 +891,7 @@ export default function AccountPage() {
                     </div>
                   </div>
 
-                  {/* PnL by Day */}
+                  {/* PnL by Day - bars proportionate to PnL */}
                   <div style={{ flex: 1, background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>PnL by Day</div>
                     {(() => {
@@ -912,23 +901,28 @@ export default function AccountPage() {
                         const day = new Date(t.date).getDay()
                         if (day >= 1 && day <= 5) dayPnL[day - 1] += parseFloat(t.pnl) || 0
                       })
+                      const maxPnL = Math.max(...dayPnL.map(p => Math.abs(p)), 1)
                       return (
-                        <>
-                          <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-                            {dayNames.map((name, i) => (
-                              <div key={i} style={{ flex: 1, padding: '6px 4px', background: '#22c55e', borderRadius: '4px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{name}</div>
-                              </div>
-                            ))}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'flex-end', marginBottom: '4px' }}>
+                            {dayPnL.map((pnl, i) => {
+                              const heightPct = Math.max((Math.abs(pnl) / maxPnL) * 100, 10)
+                              return (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                                  <div style={{ fontSize: '10px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600, marginBottom: '2px' }}>
+                                    {pnl >= 0 ? '+' : ''}{Math.round(pnl)}
+                                  </div>
+                                  <div style={{ width: '100%', height: `${heightPct}%`, background: pnl >= 0 ? '#22c55e' : '#ef4444', borderRadius: '3px 3px 0 0', minHeight: '4px' }} />
+                                </div>
+                              )
+                            })}
                           </div>
                           <div style={{ display: 'flex', gap: '4px' }}>
-                            {dayPnL.map((pnl, i) => (
-                              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', color: pnl >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
-                                {pnl >= 0 ? '+' : ''}{Math.round(pnl)}
-                              </div>
+                            {dayNames.map((name, i) => (
+                              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', fontWeight: 600, color: '#888' }}>{name}</div>
                             ))}
                           </div>
-                        </>
+                        </div>
                       )
                     })()}
                   </div>
