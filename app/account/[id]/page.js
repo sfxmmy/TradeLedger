@@ -401,13 +401,13 @@ export default function AccountPage() {
 
         {/* TRADES TAB */}
         {activeTab === 'trades' && (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
             {trades.length === 0 ? (
-              <div style={{ padding: isMobile ? '40px 20px' : '60px', textAlign: 'center', color: '#888', fontSize: '15px', background: '#0d0d12', borderRadius: '8px', border: '1px solid #1a1a22' }}>No trades yet. Click "+ LOG NEW TRADE" to add your first trade.</div>
+              <div style={{ padding: isMobile ? '40px 20px' : '60px', textAlign: 'center', color: '#888', fontSize: '15px' }}>No trades yet. Click "+ LOG NEW TRADE" to add your first trade.</div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '600px' : '900px' }}>
                 <thead>
-                  <tr style={{ background: '#0d0d12' }}>
+                  <tr style={{ background: '#0a0a0f' }}>
                     {['Symbol', 'W/L', 'PnL', '%', 'RR', ...customInputs.map(i => i.label), 'Date', ''].map((h, i) => (
                       <th key={i} style={{ padding: isMobile ? '10px 8px' : '14px 12px', textAlign: 'center', color: '#888', fontSize: isMobile ? '11px' : '12px', fontWeight: 600, textTransform: 'uppercase', borderBottom: '1px solid #1a1a22' }}>{h}</th>
                     ))}
@@ -418,9 +418,8 @@ export default function AccountPage() {
                     const extra = getExtraData(trade)
                     const pnlValue = parseFloat(trade.pnl) || 0
                     const noteContent = trade.notes || extra.notes || ''
-                    const notePreview = noteContent.length > 40 ? noteContent.substring(0, 40) + '...' : noteContent
                     return (
-                      <tr key={trade.id} style={{ borderBottom: '1px solid #141418', background: '#0d0d12' }}>
+                      <tr key={trade.id} style={{ borderBottom: '1px solid #141418' }}>
                         <td style={{ padding: isMobile ? '10px 8px' : '14px 12px', fontWeight: 600, fontSize: isMobile ? '14px' : '16px', textAlign: 'center', color: '#fff' }}>{trade.symbol}</td>
                         <td style={{ padding: '14px 12px', textAlign: 'center' }}>
                           <span style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, background: trade.outcome === 'win' ? 'rgba(34,197,94,0.15)' : trade.outcome === 'loss' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.1)', color: trade.outcome === 'win' ? '#22c55e' : trade.outcome === 'loss' ? '#ef4444' : '#888' }}>
@@ -431,7 +430,7 @@ export default function AccountPage() {
                         <td style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>{extra.riskPercent || '1'}%</td>
                         <td style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>{trade.rr || '-'}</td>
                         {customInputs.map(inp => (
-                          <td key={inp.id} style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff' }}>
+                          <td key={inp.id} style={{ padding: '14px 12px', textAlign: 'center', fontSize: '14px', color: '#fff', verticalAlign: 'middle' }}>
                             {inp.type === 'rating' ? (
                               <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
                                 {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= parseInt(extra[inp.id] || 0) ? '#22c55e' : '#2a2a35', fontSize: '14px' }}>★</span>)}
@@ -442,7 +441,7 @@ export default function AccountPage() {
                               </button>
                             ) : inp.id === 'notes' ? (
                               noteContent ? (
-                                <span onClick={() => setShowExpandedNote(noteContent)} style={{ cursor: 'pointer', color: '#888', fontSize: '12px', maxWidth: '120px', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={noteContent}>{notePreview}</span>
+                                <div onClick={() => setShowExpandedNote(noteContent)} style={{ cursor: 'pointer', color: '#888', fontSize: '12px', maxWidth: '160px', margin: '0 auto', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textAlign: 'left' }}>{noteContent}</div>
                               ) : <span style={{ color: '#444' }}>-</span>
                             ) : (
                               <span style={{ color: inp.id === 'confidence' && extra[inp.id] === 'High' ? '#22c55e' : inp.id === 'confidence' && extra[inp.id] === 'Low' ? '#ef4444' : inp.id === 'direction' ? (trade.direction === 'long' ? '#22c55e' : '#ef4444') : '#fff' }}>
