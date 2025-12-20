@@ -697,7 +697,9 @@ export default function AccountPage() {
                             })
                             
                             const mainLine = lineData[0]
-                            const areaD = equityCurveGroupBy === 'total' && mainLine ? mainLine.pathD + ` L ${mainLine.chartPoints[mainLine.chartPoints.length - 1].x} ${svgH} L ${mainLine.chartPoints[0].x} ${svgH} Z` : null
+                            // Area should fill to zero line if negative values exist, otherwise to bottom
+                            const areaBottom = hasNegative ? svgH - ((0 - yMin) / yRange) * svgH : svgH
+                            const areaD = equityCurveGroupBy === 'total' && mainLine ? mainLine.pathD + ` L ${mainLine.chartPoints[mainLine.chartPoints.length - 1].x} ${areaBottom} L ${mainLine.chartPoints[0].x} ${areaBottom} Z` : null
                             
                             // Generate X-axis labels (5-7 evenly spaced dates)
                             const xLabelCount = enlargedChart === 'equity' ? 7 : 5
@@ -1497,6 +1499,137 @@ export default function AccountPage() {
           <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
             <img src={showExpandedImage} alt="Trade" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px' }} />
             <button onClick={() => setShowExpandedImage(null)} style={{ position: 'absolute', top: '-50px', right: '0', background: 'transparent', border: 'none', color: '#888', fontSize: '32px', cursor: 'pointer' }}>×</button>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged Chart Modal */}
+      {enlargedChart && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setEnlargedChart(null)}>
+          <div style={{ background: '#0d0d12', border: '1px solid #1a1a22', borderRadius: '12px', padding: '24px', width: '90vw', maxWidth: '1200px', height: '80vh' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>{enlargedChart === 'equity' ? 'Equity Curve' : 'Performance Chart'}</span>
+              <button onClick={() => setEnlargedChart(null)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '28px', cursor: 'pointer' }}>×</button>
+            </div>
+            <div style={{ height: 'calc(100% - 60px)', display: 'flex', flexDirection: 'column' }}>
+              {enlargedChart === 'equity' && (() => {
+                const sorted = trades.length >= 2 ? [...trades].sort((a, b) => new Date(a.date) - new Date(b.date)) : []
+                if (sorted.length < 2) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>Need 2+ trades</div>
+                
+                const lineColors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4']
+                let lines = []
+                
+                if (equityCurveGroupBy === 'total') {
+                  let cum = startingBalance
+                  const points = [{ balance: cum, date: null, pnl: 0 }]
+                  sorted.forEach(t => { cum += parseFloat(t.pnl) || 0; points.push({ balance: cum, date: t.date, pnl: parseFloat(t.pnl) || 0, symbol: t.symbol }) })
+                  lines = [{ name: 'Total', points, color: '#22c55e' }]
+                } else {
+                  const groups = {}
+                  sorted.forEach(t => {
+                    let key = equityCurveGroupBy === 'symbol' ? t.symbol : equityCurveGroupBy === 'direction' ? t.direction : getExtraData(t)[equityCurveGroupBy] || 'Unknown'
+                    if (!groups[key]) groups[key] = []
+                    groups[key].push(t)
+                  })
+                  Object.keys(groups).slice(0, 9).forEach((name, idx) => {
+                    let cum = 0
+                    const pts = [{ balance: 0, date: sorted[0]?.date, pnl: 0 }]
+                    groups[name].forEach(t => { cum += parseFloat(t.pnl) || 0; pts.push({ balance: cum, date: t.date, pnl: parseFloat(t.pnl) || 0, symbol: t.symbol }) })
+                    lines.push({ name, points: pts, color: lineColors[idx % lineColors.length] })
+                  })
+                }
+                
+                const visibleLines = equityCurveGroupBy === 'total' ? lines : lines.filter(l => selectedCurveLines[l.name] !== false)
+                const allBalances = visibleLines.flatMap(l => l.points.map(p => p.balance))
+                const maxBal = Math.max(...allBalances)
+                const minBal = Math.min(...allBalances)
+                const range = maxBal - minBal || 1000
+                const yStep = Math.ceil(range / 10 / 100) * 100 || 100
+                const yMax = Math.ceil(maxBal / yStep) * yStep
+                const yMin = Math.floor(minBal / yStep) * yStep
+                const yRange = yMax - yMin || yStep
+                const hasNegative = minBal < 0
+                const zeroY = hasNegative ? ((yMax - 0) / yRange) * 100 : null
+                
+                const yLabels = []
+                for (let v = yMax; v >= yMin; v -= yStep) yLabels.push(v)
+                
+                const svgW = 100, svgH = 100
+                const lineData = visibleLines.map(line => {
+                  const chartPoints = line.points.map((p, i) => ({
+                    x: line.points.length > 1 ? (i / (line.points.length - 1)) * svgW : svgW / 2,
+                    y: svgH - ((p.balance - yMin) / yRange) * svgH,
+                    ...p
+                  }))
+                  const pathD = chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+                  return { ...line, chartPoints, pathD }
+                })
+                
+                const mainLine = lineData[0]
+                const areaBottom = hasNegative ? svgH - ((0 - yMin) / yRange) * svgH : svgH
+                const areaD = equityCurveGroupBy === 'total' && mainLine ? mainLine.pathD + ` L ${mainLine.chartPoints[mainLine.chartPoints.length - 1].x} ${areaBottom} L ${mainLine.chartPoints[0].x} ${areaBottom} Z` : null
+                
+                return (
+                  <div style={{ flex: 1, display: 'flex' }}>
+                    <div style={{ width: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                      {yLabels.map((v, i) => <span key={i} style={{ fontSize: '11px', color: '#888', textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
+                    </div>
+                    <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
+                      {zeroY !== null && <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '2px solid #666', zIndex: 1 }}><span style={{ position: 'absolute', left: '-60px', top: '-8px', fontSize: '11px', color: '#888' }}>$0</span></div>}
+                      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none">
+                        {areaD && <><defs><linearGradient id="eqGEnl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" /><stop offset="100%" stopColor="#22c55e" stopOpacity="0" /></linearGradient></defs><path d={areaD} fill="url(#eqGEnl)" /></>}
+                        {lineData.map((line, idx) => <path key={idx} d={line.pathD} fill="none" stroke={line.color} strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}
+                      </svg>
+                    </div>
+                  </div>
+                )
+              })()}
+              {enlargedChart === 'bar' && (() => {
+                const groupedData = {}
+                trades.forEach(t => {
+                  let key = graphGroupBy === 'symbol' ? t.symbol : graphGroupBy === 'direction' ? t.direction : getExtraData(t)[graphGroupBy]
+                  if (!key || key === 'Unknown') return
+                  if (!groupedData[key]) groupedData[key] = { w: 0, l: 0, pnl: 0, count: 0 }
+                  groupedData[key].count++
+                  groupedData[key].pnl += parseFloat(t.pnl) || 0
+                  if (t.outcome === 'win') groupedData[key].w++
+                  else if (t.outcome === 'loss') groupedData[key].l++
+                })
+                
+                const entries = Object.entries(groupedData).map(([name, d]) => {
+                  const wr = d.w + d.l > 0 ? Math.round((d.w / (d.w + d.l)) * 100) : 0
+                  let val, disp
+                  if (barGraphMetric === 'winrate') { val = wr; disp = wr + '%' }
+                  else if (barGraphMetric === 'pnl') { val = d.pnl; disp = (d.pnl >= 0 ? '+' : '') + '$' + Math.round(d.pnl) }
+                  else if (barGraphMetric === 'avgpnl') { val = d.count > 0 ? d.pnl / d.count : 0; disp = (val >= 0 ? '+' : '') + '$' + Math.round(val) }
+                  else { val = d.count; disp = d.count.toString() }
+                  return { name, val, disp }
+                }).sort((a, b) => b.val - a.val).slice(0, 12)
+                
+                if (entries.length === 0) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No data</div>
+                
+                const maxVal = barGraphMetric === 'winrate' ? 100 : Math.max(...entries.map(e => Math.abs(e.val)), 1)
+                const niceMax = barGraphMetric === 'winrate' ? 100 : Math.ceil(maxVal / 100) * 100 || 100
+                
+                return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '12px', padding: '20px' }}>
+                      {entries.map((item, i) => {
+                        const hPct = Math.max((Math.abs(item.val) / niceMax) * 100, 5)
+                        const isGreen = barGraphMetric === 'winrate' ? item.val >= 50 : item.val >= 0
+                        return (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: isGreen ? '#22c55e' : '#ef4444', marginBottom: '8px' }}>{item.disp}</div>
+                            <div style={{ width: '100%', height: `${hPct}%`, background: isGreen ? '#22c55e' : '#ef4444', borderRadius: '6px 6px 0 0', minHeight: '20px' }} />
+                            <div style={{ marginTop: '8px', fontSize: '12px', color: '#888', textAlign: 'center' }}>{item.name}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
         </div>
       )}

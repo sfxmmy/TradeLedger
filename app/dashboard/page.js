@@ -103,13 +103,16 @@ export default function DashboardPage() {
     const maxBal = Math.max(...points.map(p => p.balance))
     const minBal = Math.min(...points.map(p => p.balance))
     const hasNegative = minBal < 0
+    const belowStart = minBal < start // Balance went below starting balance
     const yStep = Math.ceil((maxBal - minBal) / 4 / 1000) * 1000 || 1000
     const yMax = Math.ceil(maxBal / yStep) * yStep
     const yMin = Math.floor(minBal / yStep) * yStep
     const yRange = yMax - yMin || yStep
     
-    // Calculate zero line position (percentage from top)
+    // Calculate zero line position (percentage from top) - for when actual balance goes negative
     const zeroY = hasNegative ? ((yMax - 0) / yRange) * 100 : null
+    // Calculate starting balance line (when balance drops below starting)
+    const startLineY = belowStart && !hasNegative ? ((yMax - start) / yRange) * 100 : null
 
     const yLabels = []
     for (let v = yMax; v >= yMin; v -= yStep) {
@@ -170,7 +173,15 @@ export default function DashboardPage() {
           <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
             {/* Zero line if negative values exist */}
             {zeroY !== null && (
-              <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '1px solid #444', zIndex: 1 }} />
+              <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '2px solid #666', zIndex: 1 }}>
+                <span style={{ position: 'absolute', left: '-44px', top: '-8px', fontSize: '9px', color: '#888' }}>$0</span>
+              </div>
+            )}
+            {/* Starting balance line if balance dropped below start */}
+            {startLineY !== null && (
+              <div style={{ position: 'absolute', left: 0, right: 0, top: `${startLineY}%`, borderTop: '1px dashed #666', zIndex: 1 }}>
+                <span style={{ position: 'absolute', right: '4px', top: '-12px', fontSize: '9px', color: '#888' }}>Start</span>
+              </div>
             )}
             <svg ref={svgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverPoint(null)}>
               <defs>
