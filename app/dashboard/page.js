@@ -143,6 +143,10 @@ export default function DashboardPage() {
     // Area should fill to zero line if negative values exist, otherwise to bottom
     const areaBottom = hasNegative ? svgH - ((0 - yMin) / yRange) * svgH : svgH
     const areaD = pathD + ` L ${chartPoints[chartPoints.length - 1].x} ${areaBottom} L ${chartPoints[0].x} ${areaBottom} Z`
+    
+    // Determine if current balance is negative for color
+    const currentIsNegative = chartPoints[chartPoints.length - 1]?.balance < 0
+    const lineColor = currentIsNegative ? '#ef4444' : '#22c55e'
 
     function handleMouseMove(e) {
       if (!svgRef.current) return
@@ -163,9 +167,9 @@ export default function DashboardPage() {
 
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex' }}>
-        <div style={{ width: '45px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '22px', flexShrink: 0 }}>
+        <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '22px', flexShrink: 0 }}>
           {yLabels.map((v, i) => (
-            <span key={i} style={{ fontSize: '11px', color: '#888', lineHeight: 1, textAlign: 'right' }}>${(v/1000).toFixed(0)}k</span>
+            <span key={i} style={{ fontSize: '10px', color: '#888', lineHeight: 1, textAlign: 'right' }}>${(v/1000).toFixed(0)}k</span>
           ))}
         </div>
         
@@ -173,8 +177,8 @@ export default function DashboardPage() {
           <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
             {/* Zero line if negative values exist */}
             {zeroY !== null && (
-              <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '2px solid #666', zIndex: 1 }}>
-                <span style={{ position: 'absolute', left: '-44px', top: '-8px', fontSize: '9px', color: '#888' }}>$0</span>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '2px solid #666', zIndex: 2 }}>
+                <span style={{ position: 'absolute', left: '-38px', top: '-8px', fontSize: '9px', color: '#888' }}>$0</span>
               </div>
             )}
             {/* Starting balance line if balance dropped below start */}
@@ -186,17 +190,17 @@ export default function DashboardPage() {
             <svg ref={svgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverPoint(null)}>
               <defs>
                 <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                  <stop offset="0%" stopColor={lineColor} stopOpacity="0.3" />
+                  <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path d={areaD} fill="url(#areaGrad)" />
-              <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             </svg>
             
-            {/* Green dot on the line */}
+            {/* Dot on the line */}
             {hoverPoint && (
-              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
+              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: lineColor, border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
             )}
             
             {/* Tooltip next to the dot */}
