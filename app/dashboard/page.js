@@ -185,22 +185,18 @@ export default function DashboardPage() {
             )}
             <svg ref={svgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverPoint(null)}>
               <defs>
-                <linearGradient id="areaGradGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
                   <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
                 </linearGradient>
-                <linearGradient id="areaGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                </linearGradient>
               </defs>
-              <path d={areaD} fill={hasNegative ? "url(#areaGradRed)" : "url(#areaGradGreen)"} />
-              <path d={pathD} fill="none" stroke={hasNegative ? "#ef4444" : "#22c55e"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={areaD} fill="url(#areaGrad)" />
+              <path d={pathD} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             </svg>
-
-            {/* Hover dot on the line */}
+            
+            {/* Green dot on the line */}
             {hoverPoint && (
-              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: hasNegative ? '#ef4444' : '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
+              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
             )}
             
             {/* Tooltip next to the dot */}
