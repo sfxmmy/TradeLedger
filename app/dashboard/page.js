@@ -104,7 +104,7 @@ export default function DashboardPage() {
     const minBal = Math.min(...points.map(p => p.balance))
     const hasNegative = minBal < 0
     const belowStart = minBal < start // Balance went below starting balance
-    const yStep = Math.ceil((maxBal - minBal) / 4 / 1000) * 1000 || 1000
+    const yStep = Math.ceil((maxBal - minBal) / 6 / 1000) * 1000 || 1000
     const yMax = Math.ceil(maxBal / yStep) * yStep
     const yMin = Math.floor(minBal / yStep) * yStep
     const yRange = yMax - yMin || yStep
@@ -171,6 +171,10 @@ export default function DashboardPage() {
         
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
+            {/* Horizontal grid lines */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
+              {yLabels.map((_, i) => <div key={i} style={{ borderTop: '1px solid #1a1a22' }} />)}
+            </div>
             {/* Zero line if negative values exist */}
             {zeroY !== null && (
               <div style={{ position: 'absolute', left: 0, right: 0, top: `${zeroY}%`, borderTop: '2px solid #666', zIndex: 1 }}>
@@ -194,13 +198,13 @@ export default function DashboardPage() {
                   <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <path d={areaD} fill={hasNegative ? "url(#areaGradRed)" : "url(#areaGradGreen)"} />
-              <path d={pathD} fill="none" stroke={hasNegative ? "#ef4444" : "#22c55e"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={areaD} fill={belowStart ? "url(#areaGradRed)" : "url(#areaGradGreen)"} />
+              <path d={pathD} fill="none" stroke={belowStart ? "#ef4444" : "#22c55e"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             </svg>
 
             {/* Hover dot on the line */}
             {hoverPoint && (
-              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: hasNegative ? '#ef4444' : '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
+              <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '12px', height: '12px', borderRadius: '50%', background: belowStart ? '#ef4444' : '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />
             )}
             
             {/* Tooltip next to the dot */}
