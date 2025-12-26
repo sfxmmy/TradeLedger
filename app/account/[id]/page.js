@@ -343,10 +343,10 @@ export default function AccountPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f' }} onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}>
       {/* Global scrollbar styles */}
       <style>{`
-        .trades-scroll::-webkit-scrollbar { width: 12px; height: 12px; }
-        .trades-scroll::-webkit-scrollbar-track { background: #0a0a0f; }
-        .trades-scroll::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 6px; border: 3px solid #0a0a0f; }
-        .trades-scroll::-webkit-scrollbar-thumb:hover { background: #3a3a45; }
+        .trades-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+        .trades-scroll::-webkit-scrollbar-track { background: #1a1a22; border-radius: 5px; }
+        .trades-scroll::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 5px; }
+        .trades-scroll::-webkit-scrollbar-thumb:hover { background: #16a34a; }
         .trades-scroll::-webkit-scrollbar-corner { background: #0a0a0f; }
       `}</style>
       {/* Global Tooltip */}
@@ -715,7 +715,7 @@ export default function AccountPage() {
                             
                             return (
                               <>
-                                <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                                <div style={{ width: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
                                   {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
                                 </div>
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -748,12 +748,12 @@ export default function AccountPage() {
                                       }}
                                       onMouseLeave={() => setHoverPoint(null)}
                                     >
-                                      {areaD && <><defs><linearGradient id="eqG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" /><stop offset="100%" stopColor="#22c55e" stopOpacity="0" /></linearGradient></defs><path d={areaD} fill="url(#eqG)" /></>}
+                                      {areaD && <><defs><linearGradient id="eqGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" /><stop offset="100%" stopColor="#22c55e" stopOpacity="0" /></linearGradient><linearGradient id="eqRed" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#ef4444" stopOpacity="0.3" /><stop offset="100%" stopColor="#ef4444" stopOpacity="0" /></linearGradient></defs><path d={areaD} fill={hasNegative ? "url(#eqRed)" : "url(#eqGreen)"} /></>}
                                       {lineData.map((line, idx) => (
-                                        <path key={idx} d={line.pathD} fill="none" stroke={line.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                                        <path key={idx} d={line.pathD} fill="none" stroke={equityCurveGroupBy === 'total' && hasNegative ? '#ef4444' : line.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                                       ))}
                                     </svg>
-                                    {hoverPoint && <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: hoverPoint.lineColor || '#22c55e', border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />}
+                                    {hoverPoint && <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: equityCurveGroupBy === 'total' && hasNegative ? '#ef4444' : (hoverPoint.lineColor || '#22c55e'), border: '2px solid #fff', pointerEvents: 'none', zIndex: 10 }} />}
                                     {hoverPoint && (
                                       <div style={{ position: 'absolute', left: `${hoverPoint.xPct}%`, top: `${hoverPoint.yPct}%`, transform: `translate(${hoverPoint.xPct > 80 ? 'calc(-100% - 15px)' : '15px'}, ${hoverPoint.yPct < 20 ? '0%' : hoverPoint.yPct > 80 ? '-100%' : '-50%'})`, background: '#1a1a22', border: '1px solid #2a2a35', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
                                         {hoverPoint.lineName && equityCurveGroupBy !== 'total' && <div style={{ color: hoverPoint.lineColor, fontWeight: 600, marginBottom: '2px' }}>{hoverPoint.lineName}</div>}
@@ -857,7 +857,7 @@ export default function AccountPage() {
                         </div>
                         {/* Graph - full width */}
                         <div style={{ flex: 1, display: 'flex', minHeight: '200px' }}>
-                          <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                          <div style={{ width: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
                             {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -987,7 +987,7 @@ export default function AccountPage() {
                     
                     return (
                       <>
-                        <div style={{ width: '50px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
+                        <div style={{ width: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
                           {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', textAlign: 'right' }}>${v}</span>)}
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
