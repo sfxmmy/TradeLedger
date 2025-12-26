@@ -33,6 +33,7 @@ input:focus, select:focus, textarea:focus {
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -46,6 +47,31 @@ input:focus, select:focus, textarea:focus {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #444;
+}
+
+/* Always show horizontal scrollbar in trades table */
+.trades-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.trades-scroll::-webkit-scrollbar-track {
+  background: #1a1a22;
+  border-radius: 5px;
+}
+
+.trades-scroll::-webkit-scrollbar-thumb {
+  background: #22c55e;
+  border-radius: 5px;
+}
+
+.trades-scroll::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
+}
+
+/* Hide body scrollbar */
+html, body {
+  overflow: hidden;
+  height: 100%;
 }
 
 /* Mobile responsive */
