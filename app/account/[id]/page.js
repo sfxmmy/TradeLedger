@@ -686,21 +686,21 @@ export default function AccountPage() {
                             <span style={{ fontSize: '11px', color: '#666' }}>Current: <span style={{ color: displayCurrent >= displayStart ? '#22c55e' : '#ef4444' }}>${Math.round(displayCurrent).toLocaleString()}</span></span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <select value={equityCurveGroupBy} onChange={e => { setEquityCurveGroupBy(e.target.value); setSelectedCurveLines({}) }} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                            <select value={equityCurveGroupBy} onChange={e => { setEquityCurveGroupBy(e.target.value); setSelectedCurveLines({}) }} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                               <option value="total">Total PnL</option>
                               <option value="symbol">By Pair</option>
                               <option value="direction">By Direction</option>
                               <option value="confidence">By Confidence</option>
                               <option value="session">By Session</option>
                             </select>
-                            {/* Lines dropdown in header when grouped */}
+                            {/* Filter dropdown in header when grouped */}
                             {equityCurveGroupBy !== 'total' && lines.length > 0 && (
                               <div style={{ position: 'relative' }}>
                                 <button
                                   onClick={() => setShowLinesDropdown(!showLinesDropdown)}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', cursor: 'pointer', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}
                                 >
-                                  <span>Lines ({lines.filter(l => selectedCurveLines[l.name] !== false).length}/{lines.length})</span>
+                                  <span>Filter</span>
                                   <span style={{ fontSize: '8px', transform: showLinesDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
                                 </button>
                                 {showLinesDropdown && (
@@ -753,7 +753,7 @@ export default function AccountPage() {
                             for (let v = yMax; v >= yMin; v -= yStep) yLabels.push(v)
                             
                             const hasNegative = minBal < 0
-                            const belowStart = equityCurveGroupBy === 'total' && minBal < startingBalance
+                            const belowStart = equityCurveGroupBy === 'total' && currentBalance < startingBalance
                             const zeroY = hasNegative ? ((yMax - 0) / yRange) * 100 : null
                             
                             const svgW = 100, svgH = 100
@@ -789,8 +789,8 @@ export default function AccountPage() {
                             
                             return (
                               <>
-                                <div style={{ width: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
-                                  {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
+                                <div style={{ width: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingRight: '4px' }}>
+                                  {yLabels.map((v, i) => <span key={i} style={{ fontSize: '8px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
                                 </div>
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
@@ -913,13 +913,13 @@ export default function AccountPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                           <span style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase' }}>Performance by {graphGroupBy === 'symbol' ? 'Pair' : graphGroupBy}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                            <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                               <option value="winrate">Winrate</option>
                               <option value="pnl">PnL</option>
                               <option value="avgpnl">Avg PnL</option>
                               <option value="count">Count</option>
                             </select>
-                            <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                            <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                               <option value="symbol">Pairs</option>
                               <option value="direction">Direction</option>
                               <option value="session">Session</option>
@@ -931,8 +931,8 @@ export default function AccountPage() {
                         </div>
                         {/* Graph - full width */}
                         <div style={{ flex: 1, display: 'flex', minHeight: '200px' }}>
-                          <div style={{ width: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
-                            {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
+                          <div style={{ width: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingRight: '4px' }}>
+                            {yLabels.map((v, i) => <span key={i} style={{ fontSize: '8px', color: '#888', lineHeight: 1, textAlign: 'right' }}>{v}</span>)}
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                             <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
@@ -1058,8 +1058,8 @@ export default function AccountPage() {
                     
                     return (
                       <>
-                        <div style={{ width: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0 }}>
-                          {yLabels.map((v, i) => <span key={i} style={{ fontSize: '9px', color: '#888', textAlign: 'right' }}>${v}</span>)}
+                        <div style={{ width: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingRight: '4px' }}>
+                          {yLabels.map((v, i) => <span key={i} style={{ fontSize: '8px', color: '#888', textAlign: 'right' }}>${v}</span>)}
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                           <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
@@ -1585,7 +1585,7 @@ export default function AccountPage() {
                   <>
                     <span style={{ fontSize: '12px', color: '#666' }}>Start: <span style={{ color: '#fff' }}>${startingBalance.toLocaleString()}</span></span>
                     <span style={{ fontSize: '12px', color: '#666' }}>Current: <span style={{ color: currentBalance >= startingBalance ? '#22c55e' : '#ef4444' }}>${Math.round(currentBalance).toLocaleString()}</span></span>
-                    <select value={equityCurveGroupBy} onChange={e => { setEquityCurveGroupBy(e.target.value); setSelectedCurveLines({}) }} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                    <select value={equityCurveGroupBy} onChange={e => { setEquityCurveGroupBy(e.target.value); setSelectedCurveLines({}) }} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                       <option value="total">Total PnL</option>
                       <option value="symbol">By Pair</option>
                       <option value="direction">By Direction</option>
@@ -1660,13 +1660,13 @@ export default function AccountPage() {
                 )}
                 {enlargedChart === 'bar' && (
                   <>
-                    <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                    <select value={barGraphMetric} onChange={e => setBarGraphMetric(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                       <option value="winrate">Winrate</option>
                       <option value="pnl">PnL</option>
                       <option value="trades">Trades</option>
                       <option value="avgRR">Avg RR</option>
                     </select>
-                    <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid #1a1a22', borderRadius: '4px', color: '#fff', fontSize: '11px' }}>
+                    <select value={graphGroupBy} onChange={e => setGraphGroupBy(e.target.value)} style={{ padding: '4px 8px', background: '#141418', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#fff', fontSize: '11px', boxShadow: '0 0 4px rgba(255,255,255,0.1)' }}>
                       <option value="symbol">Pairs</option>
                       <option value="direction">Direction</option>
                       <option value="session">Session</option>
@@ -1715,7 +1715,7 @@ export default function AccountPage() {
                 const yMin = Math.floor(minBal / yStep) * yStep
                 const yRange = yMax - yMin || yStep
                 const hasNegative = minBal < 0
-                const belowStartEnl = equityCurveGroupBy === 'total' && minBal < startingBalance
+                const belowStartEnl = equityCurveGroupBy === 'total' && currentBalance < startingBalance
                 const zeroY = hasNegative ? ((yMax - 0) / yRange) * 100 : null
 
                 const yLabels = []
@@ -1751,8 +1751,8 @@ export default function AccountPage() {
                 return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ flex: 1, display: 'flex' }}>
-                      <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingBottom: '20px' }}>
-                        {yLabels.map((v, i) => <span key={i} style={{ fontSize: '11px', color: '#888', textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
+                      <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingBottom: '20px', paddingRight: '4px' }}>
+                        {yLabels.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>{equityCurveGroupBy === 'total' ? `$${(v/1000).toFixed(v >= 1000 ? 0 : 1)}k` : `$${v}`}</span>)}
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: hasNegative ? 'none' : '1px solid #333' }}>
@@ -1845,8 +1845,8 @@ export default function AccountPage() {
                 return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ flex: 1, display: 'flex' }}>
-                      <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingBottom: '30px' }}>
-                        {yLabelsBar.map((v, i) => <span key={i} style={{ fontSize: '11px', color: '#888', textAlign: 'right' }}>{v}</span>)}
+                      <div style={{ width: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, paddingBottom: '30px', paddingRight: '4px' }}>
+                        {yLabelsBar.map((v, i) => <span key={i} style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>{v}</span>)}
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ flex: 1, position: 'relative', borderLeft: '1px solid #333', borderBottom: '1px solid #333' }}>
